@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Algorithms — Maximum Stock Profit</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .result-value { font-size: 2rem; font-weight: 600; }
+        /* Hide Alpine-controlled elements until Alpine initializes to avoid FOUC. */
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="container py-5" style="max-width: 780px;" x-data="maxProfitApp()">
+
+    <nav class="mb-3">
+        <a href="/" class="text-decoration-none">&larr; Back to algorithms</a>
+    </nav>
+
+    <header class="mb-4">
+        <h1 class="mb-1">Maximum Stock Profit</h1>
+        <p class="text-muted mb-0">
+            <code>POST /api/algorithms/stocks/max-profit</code> — given daily prices, find the best single buy/sell transaction.
+        </p>
+    </header>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+
+            <div class="mb-3">
+                <label for="prices" class="form-label fw-semibold">Daily prices</label>
+                <input id="prices" type="text" class="form-control font-monospace"
+                       x-model="pricesInput"
+                       placeholder="e.g. 7, 1, 5, 3, 6, 4">
+                <div class="form-text">
+                    Comma-separated non-negative integers (min 2 elements).
+                    One price per day, in chronological order.
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-primary"
+                        x-on:click="calculate()"
+                        x-bind:disabled="loading">
+                    <span x-show="!loading">Calculate</span>
+                    <span x-show="loading" x-cloak style="display: none;">
+                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        Calculating…
+                    </span>
+                </button>
+                <button class="btn btn-outline-secondary" x-on:click="loadExample()" type="button">
+                    Load example
+                </button>
+                <button class="btn btn-outline-secondary" x-on:click="clearAll()" type="button">
+                    Clear
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <template x-if="error">
+        <div class="alert alert-danger" role="alert">
+            <strong>Error:</strong> <span x-text="error"></span>
+        </div>
+    </template>
+
+    <!-- Result: profit (> 0) -->
+    <template x-if="result !== null && result > 0">
+        <div class="card shadow-sm border-success">
+            <div class="card-header bg-success-subtle">
+                <span class="fw-semibold">Profit</span>
+            </div>
+            <div class="card-body">
+                <div class="result-value text-success">+<span x-text="result"></span></div>
+                <div class="text-muted">Maximum profit achievable from a single buy/sell transaction.</div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Result: break-even (0) -->
+    <template x-if="result === 0">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning-subtle">
+                <span class="fw-semibold">Break-even</span>
+            </div>
+            <div class="card-body">
+                <div class="result-value text-warning-emphasis">0</div>
+                <div class="text-muted">The best possible trade neither profits nor loses — no price ever rose above its preceding minimum.</div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Result: loss (-1) -->
+    <template x-if="result === -1">
+        <div class="card shadow-sm border-danger">
+            <div class="card-header bg-danger-subtle">
+                <span class="fw-semibold">Loss</span>
+            </div>
+            <div class="card-body">
+                <div class="result-value text-danger">&minus;1</div>
+                <div class="text-muted">Every possible transaction would be a loss — prices only went down.</div>
+            </div>
+        </div>
+    </template>
+
+</div>
+
+<script>
+    function maxProfitApp() {
+        return {
+            pricesInput: '',
+            result: null,
+            error: null,
+            loading: false,
+
+            loadExample() {
+                // Classic LeetCode #121 example: buy at 1, sell at 6, profit = 5.
+                this.pricesInput = '7, 1, 5, 3, 6, 4';
+                this.result = null;
+                this.error = null;
+            },
+
+            clearAll() {
+                this.pricesInput = '';
+                this.result = null;
+                this.error = null;
+            },
+
+            // Parses comma-separated integers into a number[].
+            // Rejects empty tokens, non-numeric tokens, and non-integers (e.g. "3.14").
+            parsePrices(input) {
+                const trimmed = input.trim();
+                if (trimmed === '') {
+                    throw new Error('prices: value is empty');
+                }
+                const parts = trimmed.split(',').map(p => p.trim());
+                const result = [];
+                for (let i = 0; i < parts.length; i++) {
+                    const token = parts[i];
+                    const n = Number(token);
+                    if (token === '' || !Number.isInteger(n)) {
+                        throw new Error(
+                            `prices: "${token}" is not a valid integer (position ${i + 1})`
+                        );
+                    }
+                    result.push(n);
+                }
+                return result;
+            },
+
+            async calculate() {
+                this.error = null;
+                this.result = null;
+
+                let prices;
+                try {
+                    prices = this.parsePrices(this.pricesInput);
+                } catch (e) {
+                    this.error = e.message;
+                    return;
+                }
+
+                this.loading = true;
+                try {
+                    const response = await fetch('/api/algorithms/stocks/max-profit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prices })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) {
+                        this.error = data.error || `Request failed with HTTP ${response.status}`;
+                    } else {
+                        this.result = data.result;
+                    }
+                } catch (e) {
+                    this.error = `Network error: ${e.message}`;
+                } finally {
+                    this.loading = false;
+                }
+            }
+        };
+    }
+</script>
+</body>
+</html>

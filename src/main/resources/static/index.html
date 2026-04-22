@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Algorithms</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .algo-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .algo-card:hover { transform: translateY(-2px); box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08); }
+        .endpoint { font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div class="container py-5" style="max-width: 920px;">
+
+    <header class="mb-5">
+        <h1 class="mb-1">Algorithms</h1>
+        <p class="text-muted mb-0">Classic algorithms exposed as REST endpoints. Pick one to try it out.</p>
+    </header>
+
+    <section class="mb-5">
+        <h2 class="h5 text-uppercase text-muted mb-3">Available</h2>
+        <div class="row g-3">
+
+            <!-- Algorithm: Merge sorted lists -->
+            <div class="col-md-6">
+                <div class="card shadow-sm algo-card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title h5 mb-2">Merge sorted lists</h3>
+                        <p class="card-text text-muted flex-grow-1">
+                            Classic merge step from merge sort. Combines two sorted integer lists into one
+                            sorted list in linear time.
+                        </p>
+                        <div class="mb-3 d-flex flex-wrap gap-2">
+                            <span class="badge bg-light text-dark border">Time: O(n+m)</span>
+                            <span class="badge bg-light text-dark border">Space: O(n+m)</span>
+                        </div>
+                        <div class="endpoint text-muted mb-3">
+                            <code>POST /api/algorithms/lists/add</code>
+                        </div>
+                        <a href="/addSortedLists.html" class="btn btn-primary">
+                            Run &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Algorithm: Maximum stock profit -->
+            <div class="col-md-6">
+                <div class="card shadow-sm algo-card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title h5 mb-2">Maximum stock profit</h3>
+                        <p class="card-text text-muted flex-grow-1">
+                            Given daily stock prices, find the maximum profit from a single buy/sell
+                            transaction (buy one day, sell a later day). Returns -1 when every possible
+                            trade is a loss.
+                        </p>
+                        <div class="mb-3 d-flex flex-wrap gap-2">
+                            <span class="badge bg-light text-dark border">Time: O(n)</span>
+                            <span class="badge bg-light text-dark border">Space: O(1)</span>
+                        </div>
+                        <div class="endpoint text-muted mb-3">
+                            <code>POST /api/algorithms/stocks/max-profit</code>
+                        </div>
+                        <a href="/maxProfit.html" class="btn btn-primary">
+                            Run &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Algorithm: RLE compression -->
+            <div class="col-md-6">
+                <div class="card shadow-sm algo-card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title h5 mb-2">RLE compression</h3>
+                        <p class="card-text text-muted flex-grow-1">
+                            Run-Length Encoding: compresses consecutive runs of identical letters into
+                            count+char pairs (e.g. "aaabbc" &rarr; "3a2b1c"). Optional case-insensitive mode.
+                        </p>
+                        <div class="mb-3 d-flex flex-wrap gap-2">
+                            <span class="badge bg-light text-dark border">Time: O(n)</span>
+                            <span class="badge bg-light text-dark border">Space: O(n)</span>
+                        </div>
+                        <div class="endpoint text-muted mb-3">
+                            <code>POST /api/algorithms/strings/rle-compress</code>
+                        </div>
+                        <a href="/rleCompress.html" class="btn btn-primary">
+                            Run &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</div>
+</body>
+</html>

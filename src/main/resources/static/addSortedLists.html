@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Algorithms — Merge Sorted Lists</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .result-code { font-size: 0.95rem; word-break: break-all; }
+        /* Hide elements that require Alpine.js initialization to avoid FOUC
+           (flash of un-initialized content) - both branches of x-show would
+           otherwise be visible until Alpine attaches. */
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="container py-5" style="max-width: 780px;" x-data="mergeApp()">
+
+    <nav class="mb-3">
+        <a href="/" class="text-decoration-none">&larr; Back to algorithms</a>
+    </nav>
+
+    <header class="mb-4">
+        <h1 class="mb-1">Merge Sorted Lists</h1>
+        <p class="text-muted mb-0">
+            <code>POST /api/algorithms/lists/add</code> — combines two sorted integer lists into one.
+        </p>
+    </header>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+
+            <div class="mb-3">
+                <label for="list1" class="form-label fw-semibold">List 1</label>
+                <input id="list1" type="text" class="form-control font-monospace"
+                       x-model="list1Input"
+                       placeholder="e.g. -100, -70, -5, 1, 2, 4, 10">
+                <div class="form-text">Comma-separated integers in range [-100, 100], sorted ascending, max 50.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="list2" class="form-label fw-semibold">List 2</label>
+                <input id="list2" type="text" class="form-control font-monospace"
+                       x-model="list2Input"
+                       placeholder="e.g. -88, -13, -5, -1, 1, 3, 4">
+                <div class="form-text">Same rules as List 1.</div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-primary"
+                        x-on:click="merge()"
+                        x-bind:disabled="loading">
+                    <span x-show="!loading">Merge</span>
+                    <span x-show="loading" x-cloak style="display: none;">
+                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        Merging…
+                    </span>
+                </button>
+                <button class="btn btn-outline-secondary" x-on:click="loadExample()" type="button">
+                    Load example
+                </button>
+                <button class="btn btn-outline-secondary" x-on:click="clearAll()" type="button">
+                    Clear
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <template x-if="error">
+        <div class="alert alert-danger" role="alert">
+            <strong>Error:</strong> <span x-text="error"></span>
+        </div>
+    </template>
+
+    <template x-if="result !== null">
+        <div class="card shadow-sm border-success">
+            <div class="card-header bg-success-subtle d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Result</span>
+                <span class="badge bg-success" x-text="result.length + ' elements'"></span>
+            </div>
+            <div class="card-body">
+                <code class="result-code" x-text="'[' + result.join(', ') + ']'"></code>
+            </div>
+        </div>
+    </template>
+
+</div>
+
+<script>
+    function mergeApp() {
+        return {
+            list1Input: '',
+            list2Input: '',
+            result: null,
+            error: null,
+            loading: false,
+
+            // Fills the inputs with a small sample pair so the UI can be tried in one click.
+            loadExample() {
+                this.list1Input = '-100, -70, -5, 1, 2, 4, 10';
+                this.list2Input = '-88, -13, -5, -1, 1, 3, 4';
+                this.result = null;
+                this.error = null;
+            },
+
+            clearAll() {
+                this.list1Input = '';
+                this.list2Input = '';
+                this.result = null;
+                this.error = null;
+            },
+
+            // Parses a comma-separated string of integers into a number[] and reports
+            // the first invalid token with its position (1-based, human-friendly).
+            parseList(input, name) {
+                const trimmed = input.trim();
+                if (trimmed === '') return [];
+
+                const parts = trimmed.split(',').map(p => p.trim());
+                const result = [];
+                for (let i = 0; i < parts.length; i++) {
+                    const token = parts[i];
+                    const n = Number(token);
+                    if (token === '' || !Number.isInteger(n)) {
+                        throw new Error(
+                            `${name}: "${token}" is not a valid integer (position ${i + 1})`
+                        );
+                    }
+                    result.push(n);
+                }
+                return result;
+            },
+
+            // Submits the parsed lists to the REST endpoint and renders the response.
+            // Distinguishes three error classes: local parse error, API validation (400),
+            // and network/transport failure.
+            async merge() {
+                this.error = null;
+                this.result = null;
+
+                let list1, list2;
+                try {
+                    list1 = this.parseList(this.list1Input, 'list1');
+                    list2 = this.parseList(this.list2Input, 'list2');
+                } catch (e) {
+                    this.error = e.message;
+                    return;
+                }
+
+                this.loading = true;
+                try {
+                    const response = await fetch('/api/algorithms/lists/add', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ list1, list2 })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) {
+                        this.error = data.error || `Request failed with HTTP ${response.status}`;
+                    } else {
+                        this.result = data.result;
+                    }
+                } catch (e) {
+                    this.error = `Network error: ${e.message}`;
+                } finally {
+                    this.loading = false;
+                }
+            }
+        };
+    }
+</script>
+</body>
+</html>
