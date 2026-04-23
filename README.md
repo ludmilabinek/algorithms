@@ -1,16 +1,17 @@
 # Algorithms REST API
 
-A Spring Boot / Java 21 REST service exposing three classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
+A Spring Boot / Java 21 REST service exposing four classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
 
 ## Features
 
-Three algorithms, each with its own endpoint and a small browser UI:
+Four algorithms, each with its own endpoint and a small browser UI:
 
-| Algorithm                       | Endpoint                                      | Time     | Space    |
-| ------------------------------- | --------------------------------------------- | -------- | -------- |
-| Merge two sorted integer lists  | `POST /api/algorithms/lists/add`              | O(n+m)   | O(n+m)   |
-| Maximum stock profit            | `POST /api/algorithms/stocks/max-profit`      | O(n)     | O(1)     |
-| Run-Length Encoding compression | `POST /api/algorithms/strings/rle-compress`   | O(n)     | O(n)     |
+| Algorithm                       | Endpoint                                        | Time     | Space    |
+| ------------------------------- | ----------------------------------------------- | -------- | -------- |
+| Merge two sorted integer lists  | `POST /api/algorithms/lists/add`                | O(n+m)   | O(n+m)   |
+| Maximum stock profit            | `POST /api/algorithms/stocks/max-profit`        | O(n)     | O(1)     |
+| Run-Length Encoding compression | `POST /api/algorithms/strings/rle-compress`     | O(n)     | O(n)     |
+| Minutes between two times       | `POST /api/algorithms/times/minutes-between`    | O(1)     | O(1)     |
 
 ## Tech stack
 
@@ -26,7 +27,7 @@ Three algorithms, each with its own endpoint and a small browser UI:
 ./gradlew bootRun
 ```
 
-Then open <http://localhost:8080> — the landing page lists all three algorithms with a *Run* button for each.
+Then open <http://localhost:8080> — the landing page lists all four algorithms with a *Run* button for each.
 
 ## API reference
 
@@ -85,6 +86,29 @@ curl -X POST http://localhost:8080/api/algorithms/strings/rle-compress \
 With `"caseSensitive": false`, the same input returns `"5a5b1c"`. When omitted, `caseSensitive` defaults to `true` (handled via a record compact constructor).
 
 **Validation:** text non-null, 1–1000 characters, ASCII letters only (`[a-zA-Z]`). Digits are rejected because the output format `{count}{char}` would be ambiguous to decode otherwise.
+
+### Minutes between two times
+
+Given two times on a 12-hour clock separated by a dash, returns the total minutes between them. If the end time is on or before the start time, it wraps to the next day.
+
+```bash
+curl -X POST http://localhost:8080/api/algorithms/times/minutes-between \
+  -H "Content-Type: application/json" \
+  -d '{"timeRange":"1:00pm-11:00am"}'
+```
+
+```json
+{ "result": 1320 }
+```
+
+**Examples:**
+- `"9:00am-10:00am"` → `60` (same-day difference)
+- `"1:00pm-11:00am"` → `1320` (22 h — end wraps to the next day)
+- `"12:30pm-12:00am"` → `690` (11 h 30 min — end wraps to next midnight)
+
+Input is normalized (uppercased, spaces stripped) before validation, so `"1:00 PM - 11:00 AM"` is accepted.
+
+**Validation:** `timeRange` non-null, matches `^(1[0-2]|0?[1-9]):[0-5][0-9](AM|PM)-(1[0-2]|0?[1-9]):[0-5][0-9](AM|PM)$` (hours `1–12`, minutes `00–59`, each side suffixed with `AM`/`PM`).
 
 ## Error responses
 
