@@ -456,4 +456,72 @@ class AlgorithmsServiceTest {
             );
         }
     }
+
+    @Nested
+    @DisplayName("MinutesBetween - happy path")
+    class HappyPathMinutesBetween {
+
+        @ParameterizedTest
+        @MethodSource("minutesBetweenCases")
+        @DisplayName("Calculate the number of minutes in a given time period")
+        void minutesBetweenTimeRange(String timeRange, int expected) {
+            assertThat(service.minutesBetween(timeRange)).isEqualTo(expected);
+        }
+
+        static Stream<Arguments> minutesBetweenCases() {
+            return Stream.of(
+                    Arguments.of("9:00am-10:00am", 60),
+                    Arguments.of("09:00am-10:00am", 60),
+                    Arguments.of("1:00pm - 11:00am", 1320),
+                    Arguments.of("12:30PM-12:00AM", 690),
+                    Arguments.of("12:00Am-12:00Am", 0),
+                    Arguments.of("09:00am-10:00am", 60),
+                    Arguments.of("11:13am-11:14am", 1),
+                    Arguments.of("12:13am-12:13am", 0)
+            );
+        }
+
+    }
+
+    @Nested
+    @DisplayName("MinutesBetween - range format validation")
+    class RangeFormatValidationMinutesBetween {
+
+        @ParameterizedTest
+        @MethodSource("minutesBetweenCases")
+        @DisplayName("throws when range time format is note valid")
+        void throwsWhenRangeFormatIsnotValid(String timeRange) {
+            assertThatThrownBy(() -> service.minutesBetween(timeRange))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("timeRange must follow the format h:mm(AM/PM)-h:mm(AM/PM)");
+        }
+
+
+        static Stream<Arguments> minutesBetweenCases() {
+            return Stream.of(
+                    Arguments.of("21:15-23:15"),
+                    Arguments.of("00:00AM-00:15AM"),
+                    Arguments.of("text"),
+                    Arguments.of(""),
+                    Arguments.of("11:11AM 11:15AM"),
+                    Arguments.of("aaa-bbb"),
+                    Arguments.of("13:12AM-13:17AM"),
+                    Arguments.of("10AM-11AM")
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("MinutesBetween - null validation")
+    class NullValidationMinutesBetween {
+
+        @Test
+        @DisplayName("throws when timeRange is null")
+        void throwsWhenTimeRangeIsNull() {
+            String timeRange = null;
+            assertThatThrownBy(() -> service.minutesBetween(timeRange))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("timeRange must not be null");
+        }
+    }
 }

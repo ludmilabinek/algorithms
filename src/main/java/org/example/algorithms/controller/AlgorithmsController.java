@@ -4,6 +4,8 @@ import org.example.algorithms.dto.AddListsRequest;
 import org.example.algorithms.dto.AddListsResponse;
 import org.example.algorithms.dto.MaxProfitRequest;
 import org.example.algorithms.dto.MaxProfitResponse;
+import org.example.algorithms.dto.MinutesBetweenRequest;
+import org.example.algorithms.dto.MinutesBetweenResponse;
 import org.example.algorithms.dto.RleCompressRequest;
 import org.example.algorithms.dto.RleCompressResponse;
 import org.example.algorithms.service.AlgorithmsService;
@@ -40,5 +42,11 @@ public class AlgorithmsController {
     public RleCompressResponse rleCompress(@RequestBody RleCompressRequest request) {
         String compressed = algorithmsService.rleCompress(request.text(), request.caseSensitive());
         return new RleCompressResponse(compressed);
+    }
+
+    @PostMapping("/times/minutes-between")
+    public MinutesBetweenResponse minutesBetween(@RequestBody MinutesBetweenRequest request) {
+        int minutes = algorithmsService.minutesBetween(request.timeRange());
+        return new MinutesBetweenResponse(minutes);
     }
 }
