@@ -480,7 +480,6 @@ class AlgorithmsServiceTest {
                     Arguments.of("12:13am-12:13am", 0)
             );
         }
-
     }
 
     @Nested
@@ -522,6 +521,161 @@ class AlgorithmsServiceTest {
             assertThatThrownBy(() -> service.minutesBetween(timeRange))
                     .isInstanceOf(ValidationException.class)
                     .hasMessage("timeRange must not be null");
+        }
+    }
+
+    @Nested
+    @DisplayName("MostRepeatedLetters - happy path")
+    class HappyPathMostRepeatedLetters {
+
+        @ParameterizedTest
+        @MethodSource("mostRepeatedLettersCases")
+        @DisplayName("finds first word with most repeated letters")
+        void mostRepeatedLettersInText(String text, String expected) {
+            assertThat(service.mostRepeatedLetters(text)).isEqualTo(expected);
+        }
+
+        static Stream<Arguments> mostRepeatedLettersCases() {
+            return Stream.of(
+                    Arguments.of("Today, is the greatest day ever!", "greatest"),
+                    Arguments.of("Hello apple pie", "Hello"),
+                    Arguments.of("AAAaaa bbbbbb", "AAAaaa"),
+                    Arguments.of("c", "c"),
+                    Arguments.of("aabbcc aabbccdd", "aabbccdd"),
+                    Arguments.of(",,,greatest,,,", "greatest"),
+                    Arguments.of("a\tbb\nccc", "ccc"),
+                    Arguments.of("Śrubokręt i klucz", "Śrubokręt"),
+                    Arguments.of("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi convallis urna quis turpis aliquet, eget luctus odio facilisis. Sed a tellus quis mauris cursus cursus nec id mi. Proin nisl augue, sodales id arcu sed, faucibus tincidunt nunc. Cras eleifend elementum dignissim. Maecenas at quam vel dui mollis rutrum quis nec enim. Aenean vel malesuada justo, eu ullamcorper massa. Curabitur a gravida ligula. Integer ac erat semper, egestas diam vel, scelerisque ante. Maecenas sagittis nunc in accumsan varius. Proin purus metus, eleifend quis arcu ultrices, auctor lacinia mauris. Donec nisl eros, ultrices in diam ac, consequat viverra mi. Phasellus aliquam eu tortor non dictum. Donec ultrices id mauris eu facilisis. Vivamus nisi libero, aliquet sit amet turpis nec, fringilla imperdiet nisl. Duis et metus ut massa pharetra lobortis. Vestibulum placerat orci eget vehicula ultrices. Donec quis diam fermentum, gravida nibh et, ultricies lorem. Sed at tincidunt risus. Maecenas accumsan nisi dui. Phasellus tincidunt vehicula tortor, vel pulvinar tellus rutrum sit amet. Sed tincidunt ultricies ex, eget iaculis justo facilisis tristique. Aenean eget neque et massa eleifend dapibus non et diam. Nullam quis eleifend ex. In augue nibh, faucibus at consectetur et, congue nec ante. Pellentesque dictum nibh metus, quis fermentum augue sagittis id. Nulla condimentum finibus erat pharetra dapibus. Curabitur ut luctus turpis, vel mattis nibh. Sed purus augue, rutrum non sapien vitae, vulputate semper ligula. Phasellus vitae mi tortor. In ut urna nisl.", "Pellentesque"),
+                    Arguments.of("Kukułka (zwyczajna), kukułka pospolita – nazwy ludowe: gżegżółka, reg. zazula lub zozula (Cuculus canorus) – gatunek średniego ptaka wędrownego z podrodziny kukułek (Cuculinae) w rodzinie kukułkowatych (Cuculidae). Jedyny w Europie Środkowej pasożyt lęgowy.", "kukułkowatych")
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("MostRepeatedLetters - null validation")
+    class NullValidationMostRepeatedLetters {
+
+        @Test
+        @DisplayName("throws when text is null")
+        void throwsWhenTextIsNull() {
+            String text = null;
+            assertThatThrownBy(() -> service.mostRepeatedLetters(text))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("text must not be null");
+        }
+    }
+
+    @Nested
+    @DisplayName("MostRepeatedLetters - format validation")
+    class FormatValidationMostRepeatedLetters {
+
+        @ParameterizedTest
+        @MethodSource("mostRepeatedLettersCases")
+        @DisplayName("throws when text format is not valid")
+        void throwsWhenTextFormatIsNotValid(String text) {
+            assertThatThrownBy(() -> service.mostRepeatedLetters(text))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("text must contain at least one letter");
+        }
+
+
+        static Stream<Arguments> mostRepeatedLettersCases() {
+            return Stream.of(
+                    Arguments.of("12345678"),
+                    Arguments.of(" "),
+                    Arguments.of("!@#$%^&*()"),
+                    Arguments.of("\t\n")
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("MostRepeatedLetters - size validation")
+    class SizeValidationMostRepeatedLetters {
+
+        @Test
+        @DisplayName("throws when text is empty")
+        void throwsWhenTextIsEmpty() {
+            String text = "";
+            assertThatThrownBy(() -> service.mostRepeatedLetters(text))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("text must be at least 1 character long");
+        }
+
+        @Test
+        @DisplayName("throws when string is longer than 10000")
+        void throwsWhenStringIsTooLong() {
+            String text = "a".repeat(10001);
+            assertThatThrownBy(() -> service.mostRepeatedLetters(text))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("text must be no longer than 10000 characters (got 10001)");
+        }
+    }
+
+    @Nested
+    @DisplayName("noZeroPair - happy path")
+    class HappyPathNoZeroPair {
+
+        @ParameterizedTest
+        @MethodSource("noZeroPairCases")
+        @DisplayName("finds a pair of numbers whose sum equals the given number")
+        void noZeroPairFromNumber(Long n, List<Integer> expected) {
+            assertThat(service.noZeroPair(n)).containsExactlyElementsOf(expected);
+        }
+
+        static Stream<Arguments> noZeroPairCases() {
+            return Stream.of(
+                    Arguments.of(2L, List.of(1,1)),
+                    Arguments.of(2147483647L, List.of(1,2147483646)),
+                    Arguments.of(11L, List.of(2,9)),
+                    Arguments.of(1010L, List.of(11,99)),
+                    Arguments.of(2000000647L, List.of(648,1999999999))
+                    );
+        }
+    }
+
+    @Nested
+    @DisplayName("NoZeroPair  - null validation")
+    class NullValidationNoZeroPair {
+
+        @Test
+        @DisplayName("throws when n is null")
+        void throwsWhenNIsNull() {
+            Long aLong = null;
+            assertThatThrownBy(() -> service.noZeroPair(aLong))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("n must not be null");
+        }
+    }
+
+    @Nested
+    @DisplayName("NoZeroPair - size validation")
+    class SizeValidationNoZeroPair {
+
+        @ParameterizedTest
+        @MethodSource("noZeroPairTooSmallCases")
+        @DisplayName("throws when n is less than 2")
+        void throwsWhenNIsTooSmall(Long aLong) {
+            assertThatThrownBy(() -> service.noZeroPair(aLong))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("n must be greater than 1");
+        }
+
+        static Stream<Arguments> noZeroPairTooSmallCases() {
+            return Stream.of(
+                    Arguments.of(1L),
+                    Arguments.of(0L),
+                    Arguments.of(-5L)
+            );
+        }
+
+        @Test
+        @DisplayName("throws when n is greater than 2147483647")
+        void throwsWhenNIsTooBig() {
+            Long aLong = 2147483648L;
+            assertThatThrownBy(() -> service.noZeroPair(aLong))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("n must be no greater than 2147483647 (got 2147483648)");
         }
     }
 }

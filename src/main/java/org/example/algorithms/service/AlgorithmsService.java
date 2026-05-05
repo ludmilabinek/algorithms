@@ -6,9 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Service
@@ -19,6 +17,9 @@ public class AlgorithmsService {
     private static final int MAX_ELEMENT_VALUE = 100;
     private static final Pattern LETTERS_ONLY = Pattern.compile("[a-zA-Z]+");
     private static final Pattern RANGE_TIME = Pattern.compile("^(1[0-2]|0?[1-9]):[0-5][0-9](AM|PM)-(1[0-2]|0?[1-9]):[0-5][0-9](AM|PM)$");
+    private static final Pattern CONTAINS_LETTER = Pattern.compile("\\p{L}");
+    private static final int MAX_TEXT_LENGTH = 10000;
+
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
     private static final int MAX_RLE_TEXT_LENGTH = 1000;
 
@@ -123,6 +124,85 @@ public class AlgorithmsService {
     }
 
 
+    /**
+     * Returns the first word with the largest number of repeated letters.
+     * <p>
+     * Words are ranked by their letter-count distribution sorted in
+     * descending order, compared lexicographically: the word with the
+     * most frequent letter wins; ties are broken by the second-most
+     * frequent letter, then the third, and so on. When distributions
+     * are fully equal, the earliest word in the text wins.
+     * <p>
+     * Example: "greatest" (counts [2,2,1,1,1,1]) beats "ever"
+     * (counts [2,1,1,1]) because they tie on the first position (2=2)
+     * but differ on the second (2 > 1).
+     *
+     * @param text input text; words are separated by any non-letter
+     *             characters (Unicode-aware)
+     * @return the first word with the highest-ranked letter distribution,
+     *         preserving original case.
+     */
+    public String mostRepeatedLetters(String text) {
+        validateMostRepeatedLetters("text", text);
+        String[] wordArray = text.split("\\P{L}+");
+
+        String bestWord = null;
+        int[] bestSortedCountArray = null;
+
+        for (String word : wordArray) {
+            if (word.isEmpty()) continue;
+            HashMap<Character, Integer> characterMap = new HashMap<>();
+            String currentWord = word.toLowerCase(Locale.ROOT);
+            for (char c : currentWord.toCharArray()) {
+                characterMap.merge(c, 1, Integer::sum);
+
+            }
+
+            int[] sortedCountArray = characterMap.values().stream().sorted(Comparator.reverseOrder()).mapToInt(Integer::intValue).toArray();
+
+            if(bestWord == null) {
+                bestWord = word;
+                bestSortedCountArray = sortedCountArray;
+            }
+            else {
+                if (Arrays.compare(bestSortedCountArray, sortedCountArray) < 0) {
+                    bestWord = word;
+                    bestSortedCountArray = sortedCountArray;
+                }
+            }
+        }
+        return bestWord;
+    }
+
+
+    /**
+     * Finds a pair of numbers whose sum equals the given number. None of the returned numbers may contain a 0
+     * @param n; a number between 2 and 2,147,483,647
+     * @return two numbers that do not contain the digit 0
+     */
+    public List<Integer> noZeroPair(Long n) {
+        validateNoZeroPair("n", n);
+        int target = n.intValue();
+        int a = target/2;
+
+        for(int i=1; i<=a; i++) {
+            if (containsZeroDigit(i)) continue;
+            int b = target - i;
+            if (containsZeroDigit(b)) continue;
+            return List.of(i, b);
+        }
+        throw new IllegalStateException("unreachable after validation");
+    }
+
+    private boolean containsZeroDigit(int number) {
+        while(number >= 10) {
+            if(number % 10 == 0) return true;
+            number = number / 10;
+        }
+        return false;
+    }
+
+
     // VALIDATION
     private void validateAddList(String name, List<Integer> list) {
         validateNotNull(name, list);
@@ -190,6 +270,34 @@ public class AlgorithmsService {
     private void validateTimeRange(String name, String timeRange) {
         if (!RANGE_TIME.matcher(timeRange).matches()) {
             throw new ValidationException(name + " must follow the format h:mm(AM/PM)-h:mm(AM/PM)");
+        }
+    }
+
+    private void validateMostRepeatedLetters(String name, String text) {
+        validateNotNull(name, text);
+
+        if (text.isEmpty()) {
+            throw new ValidationException(name + " must be at least 1 character long");
+        }
+
+        if(text.length() > MAX_TEXT_LENGTH) {
+            throw new ValidationException(name + " must be no longer than " + MAX_TEXT_LENGTH + " characters (got " + text.length() + ")");
+        }
+
+        if(!CONTAINS_LETTER.matcher(text).find()) {
+            throw new ValidationException(name + " must contain at least one letter");
+        }
+    }
+
+    private void validateNoZeroPair(String name, Long number) {
+        validateNotNull(name, number);
+
+        if (number <= 1) {
+            throw new ValidationException(name + " must be greater than 1");
+        }
+
+        if (number > Integer.MAX_VALUE) {
+            throw new ValidationException(name + " must be no greater than " + Integer.MAX_VALUE + " (got " + number + ")");
         }
     }
 }

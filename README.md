@@ -1,17 +1,18 @@
 # Algorithms REST API
 
-A Spring Boot / Java 21 REST service exposing four classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
+A Spring Boot / Java 21 REST service exposing five classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
 
 ## Features
 
-Four algorithms, each with its own endpoint and a small browser UI:
+Five algorithms, each with its own endpoint and a small browser UI:
 
-| Algorithm                       | Endpoint                                        | Time     | Space    |
-| ------------------------------- | ----------------------------------------------- | -------- | -------- |
-| Merge two sorted integer lists  | `POST /api/algorithms/lists/add`                | O(n+m)   | O(n+m)   |
-| Maximum stock profit            | `POST /api/algorithms/stocks/max-profit`        | O(n)     | O(1)     |
-| Run-Length Encoding compression | `POST /api/algorithms/strings/rle-compress`     | O(n)     | O(n)     |
-| Minutes between two times       | `POST /api/algorithms/times/minutes-between`    | O(1)     | O(1)     |
+| Algorithm                       | Endpoint                                             | Time     | Space    |
+| ------------------------------- | ---------------------------------------------------- | -------- | -------- |
+| Merge two sorted integer lists  | `POST /api/algorithms/lists/add`                     | O(n+m)   | O(n+m)   |
+| Maximum stock profit            | `POST /api/algorithms/stocks/max-profit`             | O(n)     | O(1)     |
+| Run-Length Encoding compression | `POST /api/algorithms/strings/rle-compress`          | O(n)     | O(n)     |
+| Minutes between two times       | `POST /api/algorithms/times/minutes-between`         | O(1)     | O(1)     |
+| Most repeated letters in a word | `POST /api/algorithms/strings/most-repeated-letters` | O(n)     | O(n)     |
 
 ## Tech stack
 
@@ -27,7 +28,7 @@ Four algorithms, each with its own endpoint and a small browser UI:
 ./gradlew bootRun
 ```
 
-Then open <http://localhost:8080> — the landing page lists all four algorithms with a *Run* button for each.
+Then open <http://localhost:8080> — the landing page lists all five algorithms with a *Run* button for each.
 
 ## API reference
 
@@ -110,6 +111,28 @@ Input is normalized (uppercased, spaces stripped) before validation, so `"1:00 P
 
 **Validation:** `timeRange` non-null, matches `^(1[0-2]|0?[1-9]):[0-5][0-9](AM|PM)-(1[0-2]|0?[1-9]):[0-5][0-9](AM|PM)$` (hours `1–12`, minutes `00–59`, each side suffixed with `AM`/`PM`).
 
+### Most repeated letters
+
+Returns the first word in a text whose letters repeat the most. Words are ranked by their letter-count distribution sorted in descending order, compared lexicographically: the word with the most frequent letter wins; ties are broken by the second-most-frequent letter, then the third, and so on. When distributions are fully equal, the earlier word in the text wins.
+
+```bash
+curl -X POST http://localhost:8080/api/algorithms/strings/most-repeated-letters \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Today, is the greatest day ever!"}'
+```
+
+```json
+{ "result": "greatest" }
+```
+
+**Examples:**
+- `"Today, is the greatest day ever!"` → `"greatest"` (counts `[2,2,1,1,1,1]` vs `ever`'s `[2,1,1,1]` — tie on the first position, wins on the second)
+- `"Hello apple pie"` → `"Hello"` (counts `[2,1,1,1]` tie with `apple`; `Hello` appears earlier)
+
+Letters are counted case-insensitively (`Locale.ROOT`) but the returned word preserves original case. Word boundaries are Unicode-aware: any non-letter character (`\P{L}+`) separates words, so punctuation, whitespace, digits, and tabs all work. Polish, Greek, Cyrillic, and other non-ASCII letters are supported.
+
+**Validation:** `text` non-null, 1–10 000 characters, must contain at least one letter (otherwise there's nothing to rank).
+
 ## Error responses
 
 Every validation failure returns HTTP 400 with a targeted, actionable message:
@@ -157,7 +180,9 @@ src/main/resources/
     ├── index.html                     landing page listing algorithms
     ├── addSortedLists.html
     ├── maxProfit.html
-    └── rleCompress.html
+    ├── rleCompress.html
+    ├── minutesBetween.html
+    └── mostRepeatedLetters.html
 
 src/test/java/...                      JUnit 5 + AssertJ tests
 docs/specs/                            design documents

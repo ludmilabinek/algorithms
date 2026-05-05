@@ -6,6 +6,10 @@ import org.example.algorithms.dto.MaxProfitRequest;
 import org.example.algorithms.dto.MaxProfitResponse;
 import org.example.algorithms.dto.MinutesBetweenRequest;
 import org.example.algorithms.dto.MinutesBetweenResponse;
+import org.example.algorithms.dto.MostRepeatedLettersRequest;
+import org.example.algorithms.dto.MostRepeatedLettersResponse;
+import org.example.algorithms.dto.NoZeroPairRequest;
+import org.example.algorithms.dto.NoZeroPairResponse;
 import org.example.algorithms.dto.RleCompressRequest;
 import org.example.algorithms.dto.RleCompressResponse;
 import org.example.algorithms.service.AlgorithmsService;
@@ -48,5 +52,17 @@ public class AlgorithmsController {
     public MinutesBetweenResponse minutesBetween(@RequestBody MinutesBetweenRequest request) {
         int minutes = algorithmsService.minutesBetween(request.timeRange());
         return new MinutesBetweenResponse(minutes);
+    }
+
+    @PostMapping("/strings/most-repeated-letters")
+    public MostRepeatedLettersResponse mostRepeatedLetters(@RequestBody MostRepeatedLettersRequest request) {
+        String word = algorithmsService.mostRepeatedLetters(request.text());
+        return new MostRepeatedLettersResponse(word);
+    }
+
+    @PostMapping("/numbers/no-zero-pair")
+    public NoZeroPairResponse noZeroPair(@RequestBody NoZeroPairRequest request) {
+        List<Integer> pair = algorithmsService.noZeroPair(request.n());
+        return new NoZeroPairResponse(pair);
     }
 }

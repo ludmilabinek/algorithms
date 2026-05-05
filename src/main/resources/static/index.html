@@ -118,6 +118,54 @@
                 </div>
             </div>
 
+            <!-- Algorithm: No-zero pair -->
+            <div class="col-md-6">
+                <div class="card shadow-sm algo-card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title h5 mb-2">No-zero pair</h3>
+                        <p class="card-text text-muted flex-grow-1">
+                            Splits a positive integer <code>n</code> into two positive integers
+                            <code>a + b = n</code> such that neither <code>a</code> nor <code>b</code>
+                            contains the digit 0.
+                        </p>
+                        <div class="mb-3 d-flex flex-wrap gap-2">
+                            <span class="badge bg-light text-dark border">Time: O(n &middot; log n)</span>
+                            <span class="badge bg-light text-dark border">Space: O(1)</span>
+                        </div>
+                        <div class="endpoint text-muted mb-3">
+                            <code>POST /api/algorithms/numbers/no-zero-pair</code>
+                        </div>
+                        <a href="/noZeroPair.html" class="btn btn-primary">
+                            Run &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Algorithm: Most repeated letters -->
+            <div class="col-md-6">
+                <div class="card shadow-sm algo-card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title h5 mb-2">Most repeated letters</h3>
+                        <p class="card-text text-muted flex-grow-1">
+                            Finds the first word whose letters repeat the most. Ranks words by their
+                            letter-count distribution: the most frequent letter wins, ties are broken
+                            by the second-most frequent, and so on.
+                        </p>
+                        <div class="mb-3 d-flex flex-wrap gap-2">
+                            <span class="badge bg-light text-dark border">Time: O(n)</span>
+                            <span class="badge bg-light text-dark border">Space: O(n)</span>
+                        </div>
+                        <div class="endpoint text-muted mb-3">
+                            <code>POST /api/algorithms/strings/most-repeated-letters</code>
+                        </div>
+                        <a href="/mostRepeatedLetters.html" class="btn btn-primary">
+                            Run &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </section>
 
