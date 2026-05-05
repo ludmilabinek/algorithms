@@ -628,7 +628,7 @@ class AlgorithmsServiceTest {
                     Arguments.of(2L, List.of(1,1)),
                     Arguments.of(2147483647L, List.of(1,2147483646)),
                     Arguments.of(11L, List.of(2,9)),
-                    Arguments.of(1010L, List.of(11,99)),
+                    Arguments.of(1010L, List.of(11,999)),
                     Arguments.of(2000000647L, List.of(648,1999999999))
                     );
         }

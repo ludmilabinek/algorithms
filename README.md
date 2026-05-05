@@ -1,18 +1,19 @@
 # Algorithms REST API
 
-A Spring Boot / Java 21 REST service exposing five classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
+A Spring Boot / Java 21 REST service exposing six classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
 
 ## Features
 
-Five algorithms, each with its own endpoint and a small browser UI:
+Six algorithms, each with its own endpoint and a small browser UI:
 
-| Algorithm                       | Endpoint                                             | Time     | Space    |
-| ------------------------------- | ---------------------------------------------------- | -------- | -------- |
-| Merge two sorted integer lists  | `POST /api/algorithms/lists/add`                     | O(n+m)   | O(n+m)   |
-| Maximum stock profit            | `POST /api/algorithms/stocks/max-profit`             | O(n)     | O(1)     |
-| Run-Length Encoding compression | `POST /api/algorithms/strings/rle-compress`          | O(n)     | O(n)     |
-| Minutes between two times       | `POST /api/algorithms/times/minutes-between`         | O(1)     | O(1)     |
-| Most repeated letters in a word | `POST /api/algorithms/strings/most-repeated-letters` | O(n)     | O(n)     |
+| Algorithm                       | Endpoint                                             | Time          | Space    |
+| ------------------------------- | ---------------------------------------------------- | ------------- | -------- |
+| Merge two sorted integer lists  | `POST /api/algorithms/lists/add`                     | O(n+m)        | O(n+m)   |
+| Maximum stock profit            | `POST /api/algorithms/stocks/max-profit`             | O(n)          | O(1)     |
+| Run-Length Encoding compression | `POST /api/algorithms/strings/rle-compress`          | O(n)          | O(n)     |
+| Minutes between two times       | `POST /api/algorithms/times/minutes-between`         | O(1)          | O(1)     |
+| Most repeated letters in a word | `POST /api/algorithms/strings/most-repeated-letters` | O(n)          | O(n)     |
+| No-zero pair                    | `POST /api/algorithms/numbers/no-zero-pair`          | O(n · log n)  | O(1)     |
 
 ## Tech stack
 
@@ -28,7 +29,7 @@ Five algorithms, each with its own endpoint and a small browser UI:
 ./gradlew bootRun
 ```
 
-Then open <http://localhost:8080> — the landing page lists all five algorithms with a *Run* button for each.
+Then open <http://localhost:8080> — the landing page lists all six algorithms with a *Run* button for each.
 
 ## API reference
 
@@ -133,6 +134,27 @@ Letters are counted case-insensitively (`Locale.ROOT`) but the returned word pre
 
 **Validation:** `text` non-null, 1–10 000 characters, must contain at least one letter (otherwise there's nothing to rank).
 
+### No-zero pair
+
+Splits a positive integer `n` into two positive integers `a + b = n` such that neither `a` nor `b` contains the digit `0`. Returns the first such pair found while iterating `a` upward from `1`.
+
+```bash
+curl -X POST http://localhost:8080/api/algorithms/numbers/no-zero-pair \
+  -H "Content-Type: application/json" \
+  -d '{"n":1010}'
+```
+
+```json
+{ "result": [11, 999] }
+```
+
+**Examples:**
+- `2` → `[1, 1]`
+- `11` → `[2, 9]`
+- `1010` → `[11, 999]` (`1` and `1009` rejected because `1009` contains `0`; `2` and `1008` rejected; … `11 + 999 = 1010` is the first zero-free pair)
+
+**Validation:** `n` non-null, must be greater than `1` and no greater than `2 147 483 647` (`Integer.MAX_VALUE`). The DTO uses `Long` so values out of range produce a clean validation error instead of a JSON-deserialization failure.
+
 ## Error responses
 
 Every validation failure returns HTTP 400 with a targeted, actionable message:
@@ -182,7 +204,8 @@ src/main/resources/
     ├── maxProfit.html
     ├── rleCompress.html
     ├── minutesBetween.html
-    └── mostRepeatedLetters.html
+    ├── mostRepeatedLetters.html
+    └── noZeroPair.html
 
 src/test/java/...                      JUnit 5 + AssertJ tests
 docs/specs/                            design documents
