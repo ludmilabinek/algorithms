@@ -1,10 +1,10 @@
 # Algorithms REST API
 
-A Spring Boot / Java 21 REST service exposing six classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
+A Spring Boot / Java 21 REST service exposing seven classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
 
 ## Features
 
-Six algorithms, each with its own endpoint and a small browser UI:
+Seven algorithms, each with its own endpoint and a small browser UI:
 
 | Algorithm                       | Endpoint                                             | Time          | Space    |
 | ------------------------------- | ---------------------------------------------------- | ------------- | -------- |
@@ -14,6 +14,7 @@ Six algorithms, each with its own endpoint and a small browser UI:
 | Minutes between two times       | `POST /api/algorithms/times/minutes-between`         | O(1)          | O(1)     |
 | Most repeated letters in a word | `POST /api/algorithms/strings/most-repeated-letters` | O(n)          | O(n)     |
 | No-zero pair                    | `POST /api/algorithms/numbers/no-zero-pair`          | O(n · log n)  | O(1)     |
+| Phone validation                | `POST /api/algorithms/phones/validate`               | O(n)          | O(n)     |
 
 ## Tech stack
 
@@ -29,7 +30,7 @@ Six algorithms, each with its own endpoint and a small browser UI:
 ./gradlew bootRun
 ```
 
-Then open <http://localhost:8080> — the landing page lists all six algorithms with a *Run* button for each.
+Then open <http://localhost:8080> — the landing page lists all seven algorithms with a *Run* button for each.
 
 ## API reference
 
@@ -155,6 +156,40 @@ curl -X POST http://localhost:8080/api/algorithms/numbers/no-zero-pair \
 
 **Validation:** `n` non-null, must be greater than `1` and no greater than `2 147 483 647` (`Integer.MAX_VALUE`). The DTO uses `Long` so values out of range produce a clean validation error instead of a JSON-deserialization failure.
 
+### Phone validation
+
+Validates a Polish 9-digit phone number. Accepts an optional `+48` country prefix and common separators (spaces, hyphens, and parentheses around a 2-digit landline area code). After stripping the separators, the input must consist of exactly 9 digits, optionally preceded by `+48`.
+
+```bash
+curl -X POST http://localhost:8080/api/algorithms/phones/validate \
+  -H "Content-Type: application/json" \
+  -d '{"phone":"+48 500 600 700"}'
+```
+
+```json
+{ "result": true }
+```
+
+**Examples — valid:**
+- `"123456789"` → `true` (mobile, no separators)
+- `"500 600 700"` → `true` (mobile, spaces)
+- `"500-600-700"` → `true` (mobile, hyphens)
+- `"(22) 123 45 67"` → `true` (landline, Warsaw — `22` is the area code, part of the 9 digits)
+- `"+48 500 600 700"` → `true` (with country prefix)
+- `"+48 (22) 123 45 67"` → `true` (international format, landline)
+
+**Examples — invalid:**
+- `"12345678"` → `false` (8 digits)
+- `"1234567890"` → `false` (10 digits)
+- `"+972 500 600 700"` → `false` (foreign country code)
+- `"500*600*700"` → `false` (`*` is not an allowed separator)
+- `"abcdefghi"` → `false` (no digits)
+- `""` → `false` (empty)
+
+**Validation:** `phone` non-null. Anything else (empty string, malformed, wrong length, foreign prefix, illegal characters) returns `{"result": false}` rather than throwing — the endpoint *answers* the validity question rather than rejecting the input.
+
+**Implementation:** strip separators (`[-()\s]`) → match `^(\+48)?[0-9]{9}$`. Both patterns are precompiled at class-load time.
+
 ## Error responses
 
 Every validation failure returns HTTP 400 with a targeted, actionable message:
@@ -205,7 +240,8 @@ src/main/resources/
     ├── rleCompress.html
     ├── minutesBetween.html
     ├── mostRepeatedLetters.html
-    └── noZeroPair.html
+    ├── noZeroPair.html
+    └── phoneValidate.html
 
 src/test/java/...                      JUnit 5 + AssertJ tests
 docs/specs/                            design documents

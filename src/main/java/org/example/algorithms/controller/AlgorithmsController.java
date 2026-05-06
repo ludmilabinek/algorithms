@@ -10,6 +10,8 @@ import org.example.algorithms.dto.MostRepeatedLettersRequest;
 import org.example.algorithms.dto.MostRepeatedLettersResponse;
 import org.example.algorithms.dto.NoZeroPairRequest;
 import org.example.algorithms.dto.NoZeroPairResponse;
+import org.example.algorithms.dto.PhoneValidationRequest;
+import org.example.algorithms.dto.PhoneValidationResponse;
 import org.example.algorithms.dto.RleCompressRequest;
 import org.example.algorithms.dto.RleCompressResponse;
 import org.example.algorithms.service.AlgorithmsService;
@@ -64,5 +66,11 @@ public class AlgorithmsController {
     public NoZeroPairResponse noZeroPair(@RequestBody NoZeroPairRequest request) {
         List<Integer> pair = algorithmsService.noZeroPair(request.n());
         return new NoZeroPairResponse(pair);
+    }
+
+    @PostMapping("/phones/validate")
+    public PhoneValidationResponse validatePhone(@RequestBody PhoneValidationRequest request) {
+        boolean valid = algorithmsService.isPhoneValid(request.phone());
+        return new PhoneValidationResponse(valid);
     }
 }

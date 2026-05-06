@@ -678,4 +678,86 @@ class AlgorithmsServiceTest {
                     .hasMessage("n must be no greater than 2147483647 (got 2147483648)");
         }
     }
+
+    @Nested
+    @DisplayName("isPhoneValid - happy path")
+    class HappyPathIsPhoneValid {
+
+        @ParameterizedTest
+        @MethodSource("isPhoneValidCases")
+        @DisplayName("Check that the phone number is correct")
+        void isPhoneValid(String phone, boolean expected) {
+            assertThat(service.isPhoneValid(phone)).isEqualTo(expected);
+        }
+
+        static Stream<Arguments> isPhoneValidCases() {
+            return Stream.of(
+                    Arguments.of("123456789", true),
+                    Arguments.of("500600700", true),
+                    Arguments.of("500 600 700", true),
+                    Arguments.of("12 34 56 789", true),
+                    Arguments.of("500-600-700", true),
+                    Arguments.of("12-34-56-789", true),
+                    Arguments.of("(22) 123 45 67", true),
+                    Arguments.of("(12) 345-67-89", true),
+                    Arguments.of("(61)1234567", true),
+                    Arguments.of("(58) 987 65 43", true),
+                    Arguments.of("+48123456789", true),
+                    Arguments.of("+48 500 600 700", true),
+                    Arguments.of("+48-500-600-700", true),
+                    Arguments.of("+48 (22) 123 45 67", true),
+                    Arguments.of("+48(12)3456789", true),
+                    Arguments.of("+48 22 123 45 67", true),
+                    Arguments.of(" 123 456 789 ", true),
+                    Arguments.of("123\t456\t789", true),
+                    Arguments.of(" +48 500 600 700 ", true),
+                    Arguments.of("( 22 ) 123 45 67", true)
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("isPhoneValid - invalidate format")
+    class InvalidFormatIsPhoneValid {
+
+        @ParameterizedTest
+        @MethodSource("isPhoneValidInvalidateCases")
+        @DisplayName("Check that the phone number is incorrect")
+        void isPhoneInvalid(String phone, boolean expected) {
+            assertThat(service.isPhoneValid(phone)).isEqualTo(expected);
+        }
+
+        static Stream<Arguments> isPhoneValidInvalidateCases() {
+            return Stream.of(
+                    Arguments.of("1234567890", false),
+                    Arguments.of("+972 500600700", false),
+                    Arguments.of("500 600 700 123", false),
+                    Arguments.of("12 34 565 789", false),
+                    Arguments.of("500*600*700", false),
+                    Arguments.of("12@34!56?789", false),
+                    Arguments.of("abcdefghi", false),
+                    Arguments.of("(12) 345_67_89", false),
+                    Arguments.of("", false),
+                    Arguments.of("12345678", false),
+                    Arguments.of("+4812345678", false),
+                    Arguments.of("+48 12 34 56 78", false),
+                    Arguments.of("123", false),
+                    Arguments.of("+48 1", false)
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("isPhoneValid  - null validation")
+    class NullValidationIsPhoneValid {
+
+        @Test
+        @DisplayName("throws when phone is null")
+        void throwsWhenPhoneIsNull() {
+            String phone = null;
+            assertThatThrownBy(() -> service.isPhoneValid(phone))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("phone must not be null");
+        }
+    }
 }

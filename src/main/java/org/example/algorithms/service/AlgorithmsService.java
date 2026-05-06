@@ -23,6 +23,9 @@ public class AlgorithmsService {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("h:mma", Locale.ENGLISH);
     private static final int MAX_RLE_TEXT_LENGTH = 1000;
 
+    private static final Pattern PHONE_FORMAT = Pattern.compile("^(\\+48)?[0-9]{9}$");
+    private static final Pattern PHONE_SEPARATORS = Pattern.compile("[-()\\s]");
+
     public List<Integer> addSortedLists(List<Integer> list1, List<Integer> list2) {
         validateAddList("list1", list1);
         validateAddList("list2", list2);
@@ -194,6 +197,13 @@ public class AlgorithmsService {
         throw new IllegalStateException("unreachable after validation");
     }
 
+    public boolean isPhoneValid(String phone) {
+        validateIsPhoneValid("phone", phone);
+        String cleanPhone = PHONE_SEPARATORS.matcher(phone).replaceAll("");
+
+        return PHONE_FORMAT.matcher(cleanPhone).matches();
+    }
+
     private boolean containsZeroDigit(int number) {
         while(number >= 10) {
             if(number % 10 == 0) return true;
@@ -299,5 +309,9 @@ public class AlgorithmsService {
         if (number > Integer.MAX_VALUE) {
             throw new ValidationException(name + " must be no greater than " + Integer.MAX_VALUE + " (got " + number + ")");
         }
+    }
+
+    private void validateIsPhoneValid(String name, String phone) {
+        validateNotNull(name, phone);
     }
 }

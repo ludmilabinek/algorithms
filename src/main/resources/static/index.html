@@ -142,6 +142,30 @@
                 </div>
             </div>
 
+            <!-- Algorithm: Phone validation -->
+            <div class="col-md-6">
+                <div class="card shadow-sm algo-card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title h5 mb-2">Phone validation</h3>
+                        <p class="card-text text-muted flex-grow-1">
+                            Validates a Polish 9-digit phone number. Accepts optional
+                            <code>+48</code> country prefix and common separators (spaces,
+                            hyphens, parentheses around a landline area code).
+                        </p>
+                        <div class="mb-3 d-flex flex-wrap gap-2">
+                            <span class="badge bg-light text-dark border">Time: O(n)</span>
+                            <span class="badge bg-light text-dark border">Space: O(n)</span>
+                        </div>
+                        <div class="endpoint text-muted mb-3">
+                            <code>POST /api/algorithms/phones/validate</code>
+                        </div>
+                        <a href="/phoneValidate.html" class="btn btn-primary">
+                            Run &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Algorithm: Most repeated letters -->
             <div class="col-md-6">
                 <div class="card shadow-sm algo-card h-100">
