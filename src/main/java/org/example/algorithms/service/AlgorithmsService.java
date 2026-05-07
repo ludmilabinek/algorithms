@@ -26,6 +26,8 @@ public class AlgorithmsService {
     private static final Pattern PHONE_FORMAT = Pattern.compile("^(\\+48)?[0-9]{9}$");
     private static final Pattern PHONE_SEPARATORS = Pattern.compile("[-()\\s]");
 
+    private static final int MAX_FACTORIAL_N = 5000;
+
     public List<Integer> addSortedLists(List<Integer> list1, List<Integer> list2) {
         validateAddList("list1", list1);
         validateAddList("list2", list2);
@@ -197,13 +199,6 @@ public class AlgorithmsService {
         throw new IllegalStateException("unreachable after validation");
     }
 
-    public boolean isPhoneValid(String phone) {
-        validateIsPhoneValid("phone", phone);
-        String cleanPhone = PHONE_SEPARATORS.matcher(phone).replaceAll("");
-
-        return PHONE_FORMAT.matcher(cleanPhone).matches();
-    }
-
     private boolean containsZeroDigit(int number) {
         while(number >= 10) {
             if(number % 10 == 0) return true;
@@ -212,6 +207,46 @@ public class AlgorithmsService {
         return false;
     }
 
+    public boolean isPhoneValid(String phone) {
+        validateIsPhoneValid("phone", phone);
+        String cleanPhone = PHONE_SEPARATORS.matcher(phone).replaceAll("");
+
+        return PHONE_FORMAT.matcher(cleanPhone).matches();
+    }
+
+    public String factorial(Integer n) {
+        validateFactorial("n", n);
+        if (n <= 1) return "1";
+        List<Integer> digits = new ArrayList<>();
+        digits.add(1);
+        for (int i = 2; i <= n; i++) {
+            digits = multiply(digits, i);
+        }
+        StringBuilder result = new StringBuilder();
+        for(int j = digits.size()-1; j >= 0; j--) {
+            result.append(digits.get(j));
+        }
+        return result.toString();
+    }
+
+    private List<Integer> multiply(List<Integer> digits, int n) {
+        int carry = 0;
+        List<Integer> numbers = new ArrayList<>();
+        for (int i=0; i<digits.size(); i++) {
+            int product = digits.get(i) * n + carry;
+            int remainder   = product % 10;
+            numbers.add(remainder);
+            carry = product / 10;
+
+        }
+        while(carry > 0) {
+            int remainder   = carry % 10;
+            numbers.add(remainder);
+            carry = carry / 10;
+        }
+
+        return numbers;
+    }
 
     // VALIDATION
     private void validateAddList(String name, List<Integer> list) {
@@ -313,5 +348,17 @@ public class AlgorithmsService {
 
     private void validateIsPhoneValid(String name, String phone) {
         validateNotNull(name, phone);
+    }
+
+    private void validateFactorial(String name, Integer n) {
+        validateNotNull(name, n);
+
+        if (n < 0) {
+            throw new ValidationException(name + " must be at least 0");
+        }
+
+        if (n>MAX_FACTORIAL_N) {
+            throw new ValidationException(name + " must be no greater than " + MAX_FACTORIAL_N + " (got " + n + ")");
+        }
     }
 }

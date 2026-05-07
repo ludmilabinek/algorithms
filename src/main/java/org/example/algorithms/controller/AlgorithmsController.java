@@ -2,6 +2,8 @@ package org.example.algorithms.controller;
 
 import org.example.algorithms.dto.AddListsRequest;
 import org.example.algorithms.dto.AddListsResponse;
+import org.example.algorithms.dto.FactorialRequest;
+import org.example.algorithms.dto.FactorialResponse;
 import org.example.algorithms.dto.MaxProfitRequest;
 import org.example.algorithms.dto.MaxProfitResponse;
 import org.example.algorithms.dto.MinutesBetweenRequest;
@@ -72,5 +74,11 @@ public class AlgorithmsController {
     public PhoneValidationResponse validatePhone(@RequestBody PhoneValidationRequest request) {
         boolean valid = algorithmsService.isPhoneValid(request.phone());
         return new PhoneValidationResponse(valid);
+    }
+
+    @PostMapping("/numbers/factorial")
+    public FactorialResponse factorial(@RequestBody FactorialRequest request) {
+        String result = algorithmsService.factorial(request.n());
+        return new FactorialResponse(result);
     }
 }

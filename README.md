@@ -1,10 +1,10 @@
 # Algorithms REST API
 
-A Spring Boot / Java 21 REST service exposing seven classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
+A Spring Boot / Java 21 REST service exposing eight classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
 
 ## Features
 
-Seven algorithms, each with its own endpoint and a small browser UI:
+Eight algorithms, each with its own endpoint and a small browser UI:
 
 | Algorithm                       | Endpoint                                             | Time          | Space    |
 | ------------------------------- | ---------------------------------------------------- | ------------- | -------- |
@@ -15,6 +15,7 @@ Seven algorithms, each with its own endpoint and a small browser UI:
 | Most repeated letters in a word | `POST /api/algorithms/strings/most-repeated-letters` | O(n)          | O(n)     |
 | No-zero pair                    | `POST /api/algorithms/numbers/no-zero-pair`          | O(n · log n)  | O(1)     |
 | Phone validation                | `POST /api/algorithms/phones/validate`               | O(n)          | O(n)     |
+| Factorial (big numbers)         | `POST /api/algorithms/numbers/factorial`             | O(n · d)      | O(d)     |
 
 ## Tech stack
 
@@ -30,7 +31,7 @@ Seven algorithms, each with its own endpoint and a small browser UI:
 ./gradlew bootRun
 ```
 
-Then open <http://localhost:8080> — the landing page lists all seven algorithms with a *Run* button for each.
+Then open <http://localhost:8080> — the landing page lists all eight algorithms with a *Run* button for each.
 
 ## API reference
 
@@ -190,6 +191,32 @@ curl -X POST http://localhost:8080/api/algorithms/phones/validate \
 
 **Implementation:** strip separators (`[-()\s]`) → match `^(\+48)?[0-9]{9}$`. Both patterns are precompiled at class-load time.
 
+### Factorial (big numbers)
+
+Computes `n!` (the product of all integers from `1` to `n`) for arbitrarily large results — without using `BigInteger` or `BigDecimal`. The result is returned as a decimal string, since even modest inputs overflow `long` (`21!` already exceeds `Long.MAX_VALUE`).
+
+```bash
+curl -X POST http://localhost:8080/api/algorithms/numbers/factorial \
+  -H "Content-Type: application/json" \
+  -d '{"n":100}'
+```
+
+```json
+{ "result": "933262154439441526816992388562667004907159682643816214685929638952175999932299156089414639761565182862536979208272237582511852109168640000000000000000000000000" }
+```
+
+**Examples:**
+- `0` → `"1"` (by convention, `0! = 1`)
+- `5` → `"120"`
+- `20` → `"2432902008176640000"` (the last value that still fits in `long`)
+- `25` → `"15511210043330985984000000"` (already beyond `long`)
+- `100` → 158 digits
+- `5000` → 16 326 digits
+
+**Validation:** `n` non-null, `0 ≤ n ≤ 5000`. The upper limit is a denial-of-service guard — `n = 1 000 000` would allocate millions of digits and block the worker thread.
+
+**Implementation:** schoolbook long multiplication on a digit array (least-significant-first). Each step multiplies the running result by the next factor, propagating carry digit-by-digit. Time complexity is `O(n · d)` where `d` is the number of digits in the final result; space is `O(d)`. The `int` arithmetic stays safe because `digit (≤ 9) × n + carry < 10 · n ≤ 50 000` for `n ≤ 5 000` — well under `Integer.MAX_VALUE`.
+
 ## Error responses
 
 Every validation failure returns HTTP 400 with a targeted, actionable message:
@@ -241,7 +268,8 @@ src/main/resources/
     ├── minutesBetween.html
     ├── mostRepeatedLetters.html
     ├── noZeroPair.html
-    └── phoneValidate.html
+    ├── phoneValidate.html
+    └── factorial.html
 
 src/test/java/...                      JUnit 5 + AssertJ tests
 docs/specs/                            design documents
