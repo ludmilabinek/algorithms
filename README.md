@@ -1,10 +1,10 @@
 # Algorithms REST API
 
-A Spring Boot / Java 21 REST service exposing eight classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
+A Spring Boot / Java 21 REST service exposing nine classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
 
 ## Features
 
-Eight algorithms, each with its own endpoint and a small browser UI:
+Nine algorithms, each with its own endpoint and a small browser UI:
 
 | Algorithm                       | Endpoint                                             | Time          | Space    |
 | ------------------------------- | ---------------------------------------------------- | ------------- | -------- |
@@ -16,6 +16,7 @@ Eight algorithms, each with its own endpoint and a small browser UI:
 | No-zero pair                    | `POST /api/algorithms/numbers/no-zero-pair`          | O(n · log n)  | O(1)     |
 | Phone validation                | `POST /api/algorithms/phones/validate`               | O(n)          | O(n)     |
 | Factorial (big numbers)         | `POST /api/algorithms/numbers/factorial`             | O(n · d)      | O(d)     |
+| Magic square check              | `POST /api/algorithms/numbers/magic-square`          | O(n²)         | O(n²)    |
 
 ## Tech stack
 
@@ -31,7 +32,7 @@ Eight algorithms, each with its own endpoint and a small browser UI:
 ./gradlew bootRun
 ```
 
-Then open <http://localhost:8080> — the landing page lists all eight algorithms with a *Run* button for each.
+Then open <http://localhost:8080> — the landing page lists all nine algorithms with a *Run* button for each.
 
 ## API reference
 
@@ -217,6 +218,34 @@ curl -X POST http://localhost:8080/api/algorithms/numbers/factorial \
 
 **Implementation:** schoolbook long multiplication on a digit array (least-significant-first). Each step multiplies the running result by the next factor, propagating carry digit-by-digit. Time complexity is `O(n · d)` where `d` is the number of digits in the final result; space is `O(d)`. The `int` arithmetic stays safe because `digit (≤ 9) × n + carry < 10 · n ≤ 50 000` for `n ≤ 5 000` — well under `Integer.MAX_VALUE`.
 
+### Magic square check
+
+Checks whether an `n × n` matrix is a *magic square* — every row, every column, and both diagonals sum to the same value, **and** the matrix contains each integer from `1` to `n²` exactly once.
+
+```bash
+curl -X POST http://localhost:8080/api/algorithms/numbers/magic-square \
+  -H "Content-Type: application/json" \
+  -d '{"matrix":[[2,7,6],[9,5,1],[4,3,8]]}'
+```
+
+```json
+{ "result": true }
+```
+
+**Examples:**
+- `[[1]]` → `true` (trivial 1×1)
+- `[[2,7,6],[9,5,1],[4,3,8]]` → `true` (Lo Shu, magic sum 15)
+- `[[16,3,2,13],[5,10,11,8],[9,6,7,12],[4,15,14,1]]` → `true` (Dürer's *Melencolia I*, 1514)
+- `[[1,2,3],[4,5,6],[7,8,9]]` → `false` (row sums 6/15/24 differ)
+- `[[5,5,5],[5,5,5],[5,5,5]]` → `false` (sums match but values are not `{1..n²}`)
+- `[[1,2],[3,4]]` → `false` (no 2×2 magic square exists)
+
+**Validation:** `matrix` non-null and non-empty, must be square (`n × n`), every row of equal length, no `null` cells, every cell `> 0`. Capped at `n ≤ 100` as a denial-of-service guard.
+
+**Returns `false` (not throws)** for an otherwise structurally-valid matrix that simply isn't magic — e.g. wrong sums, duplicates, values outside `[1, n²]`.
+
+**Implementation:** single pass over the matrix in `O(n²)` time and `O(n²)` extra space (a `boolean[]` to detect duplicates). On the way through, each row sum is compared against the first row's sum; both diagonals are accumulated by checking `row == col` (main diagonal) and `row == n - col - 1` (anti-diagonal). Numerically safe in `int` for `n ≤ 100` — max sum is `n × n² = 1 000 000`, well below `Integer.MAX_VALUE`.
+
 ## Error responses
 
 Every validation failure returns HTTP 400 with a targeted, actionable message:
@@ -269,7 +298,8 @@ src/main/resources/
     ├── mostRepeatedLetters.html
     ├── noZeroPair.html
     ├── phoneValidate.html
-    └── factorial.html
+    ├── factorial.html
+    └── magicSquare.html
 
 src/test/java/...                      JUnit 5 + AssertJ tests
 docs/specs/                            design documents

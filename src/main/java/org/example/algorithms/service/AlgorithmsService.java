@@ -28,6 +28,8 @@ public class AlgorithmsService {
 
     private static final int MAX_FACTORIAL_N = 5000;
 
+    private static final int MAX_MAGIC_SQUARE_N = 100;
+
     public List<Integer> addSortedLists(List<Integer> list1, List<Integer> list2) {
         validateAddList("list1", list1);
         validateAddList("list2", list2);
@@ -229,6 +231,7 @@ public class AlgorithmsService {
         return result.toString();
     }
 
+
     private List<Integer> multiply(List<Integer> digits, int n) {
         int carry = 0;
         List<Integer> numbers = new ArrayList<>();
@@ -246,6 +249,39 @@ public class AlgorithmsService {
         }
 
         return numbers;
+    }
+
+    public boolean isMagicSquare(Integer[][] matrix) {
+        validateMagicSquare("matrix", matrix);
+        int sum = 0;
+        int currentSum;
+        int diagonalSumLower = 0;
+        int diagonalSumUpper = 0;
+        int matrixLength = matrix.length;
+
+        boolean[] seen = new boolean[matrixLength*matrixLength + 1];
+
+        for(int row = 0; row < matrix.length; row++) {
+            currentSum = 0;
+            for(int col = 0; col < matrix[row].length; col++) {
+                int value = matrix[row][col];
+
+                if(value<1 || value>matrixLength*matrixLength) return false;
+                // check if the value has already been used
+                if (seen[value]) return false;
+                // set the value in the seen array to true to avoid duplicates
+                seen[value] = true;
+
+                currentSum += value;
+                if(row==col) diagonalSumLower += value;
+                if(row==matrixLength-col-1) diagonalSumUpper += value;
+            }
+            if(sum == 0) sum = currentSum;
+            if(sum!=currentSum) return false;
+        }
+        if(sum!=diagonalSumLower || sum!=diagonalSumUpper) return false;
+
+        return true;
     }
 
     // VALIDATION
@@ -360,5 +396,40 @@ public class AlgorithmsService {
         if (n>MAX_FACTORIAL_N) {
             throw new ValidationException(name + " must be no greater than " + MAX_FACTORIAL_N + " (got " + n + ")");
         }
+    }
+
+    private void validateMagicSquare(String name, Integer[][] matrix) {
+        validateNotNull(name, matrix);
+
+        int countRow = matrix.length;
+
+        if (countRow == 0) {
+            throw new ValidationException(name + " must not be empty");
+        }
+
+        if(countRow>MAX_MAGIC_SQUARE_N) {
+            throw new ValidationException(name + " size must be no greater than " + MAX_MAGIC_SQUARE_N + " (got " + matrix.length + ")");
+        }
+
+        int countCol = matrix[0].length;
+
+        if(countCol != countRow) {
+            throw new ValidationException(name + " must have the same number of rows as columns");
+        }
+
+        for (int row = 0; row < matrix.length; row++) {
+            if(matrix[row].length!=countCol) {
+                throw new ValidationException(name + " must have " + countCol + " columns");
+            }
+            for (int col = 0; col < matrix[row].length; col++) {
+                if(matrix[row][col]==null) {
+                    throw new ValidationException(name + " must not contain null values in row : " + row + ", col : " + col);
+                }
+                if(matrix[row][col]<=0) {
+                    throw new ValidationException(name + " must contain values greater than zero in row : " + row + ", col : " + col);
+                }
+            }
+        }
+
     }
 }

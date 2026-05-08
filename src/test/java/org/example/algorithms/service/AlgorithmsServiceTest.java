@@ -828,4 +828,205 @@ class AlgorithmsServiceTest {
                     .hasMessage("n must be no greater than 5000 (got 5001)");
         }
     }
+
+    @Nested
+    @DisplayName("isMagicSquare - happy path")
+    class HappyPathIsMagicSquare{
+
+        @ParameterizedTest
+        @MethodSource("validMagicSquareCases")
+        @DisplayName("returns true for valid magic squares")
+        void recognizesValidMagicSquare(Integer[][] matrix) {
+            assertThat(service.isMagicSquare(matrix)).isTrue();
+        }
+
+        static Stream<Arguments> validMagicSquareCases() {
+            return Stream.of(
+                    // n=1: trivial
+                    Arguments.of((Object) new Integer[][] {
+                            {1}
+                    }),
+
+                    // n=3: Lo Shu (classic chinese, magic sum 15)
+                    Arguments.of((Object) new Integer[][] {
+                            {2, 7, 6},
+                            {9, 5, 1},
+                            {4, 3, 8}
+                    }),
+
+                    // n=3: rotation/reflection of Lo Shu (magic sum 15)
+                    Arguments.of((Object) new Integer[][] {
+                            {4, 9, 2},
+                            {3, 5, 7},
+                            {8, 1, 6}
+                    }),
+
+                    // n=4: Dürer's "Melencolia I" (1514, magic sum 34)
+                    Arguments.of((Object) new Integer[][] {
+                            {16,  3,  2, 13},
+                            { 5, 10, 11,  8},
+                            { 9,  6,  7, 12},
+                            { 4, 15, 14,  1}
+                    }),
+
+                    // n=4: alternative magic square (magic sum 34)
+                    Arguments.of((Object) new Integer[][] {
+                            { 1, 15, 14,  4},
+                            {12,  6,  7,  9},
+                            { 8, 10, 11,  5},
+                            {13,  3,  2, 16}
+                    }),
+
+                    // n=5: Siamese method / de la Loubère (magic sum 65)
+                    Arguments.of((Object) new Integer[][] {
+                            {17, 24,  1,  8, 15},
+                            {23,  5,  7, 14, 16},
+                            { 4,  6, 13, 20, 22},
+                            {10, 12, 19, 21,  3},
+                            {11, 18, 25,  2,  9}
+                    })
+            );
+        }
+
+        @ParameterizedTest
+        @MethodSource("invalidMagicSquareCases")
+        @DisplayName("returns false for invalid magic squares")
+        void recognizesInvalidMagicSquare(Integer[][] matrix) {
+            assertThat(service.isMagicSquare(matrix)).isFalse();
+        }
+
+        static Stream<Arguments> invalidMagicSquareCases() {
+            return Stream.of(
+                    // wrong row sums (sequential 1-9, sums 6/15/24)
+                    Arguments.of((Object) new Integer[][] {
+                            {1, 2, 3},
+                            {4, 5, 6},
+                            {7, 8, 9}
+                    }),
+
+                    // 2×2 — no 2×2 magic square exists (provably)
+                    Arguments.of((Object) new Integer[][] {
+                            {1, 2},
+                            {3, 4}
+                    }),
+
+                    // duplicates (all values = 5; sums match but values are not {1..n²})
+                    Arguments.of((Object) new Integer[][] {
+                            {5, 5, 5},
+                            {5, 5, 5},
+                            {5, 5, 5}
+                    }),
+
+                    // values out of range [1, n²]: Lo Shu × 100
+                    Arguments.of((Object) new Integer[][] {
+                            {200, 700, 600},
+                            {900, 500, 100},
+                            {400, 300, 800}
+                    }),
+
+                    // rows and columns OK, but diagonal wrong (1+3+2=6, not 15)
+                    Arguments.of((Object) new Integer[][] {
+                            {1, 5, 9},
+                            {8, 3, 4},
+                            {6, 7, 2}
+                    })
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("magic square - size validation")
+    class SizeValidationMagicSquare {
+        @Test
+        @DisplayName("throws when matrix is empty")
+        void throwsWhenMatrixIsEmpty() {
+            Integer[][] matrix = new Integer[0][];
+            assertThatThrownBy(() -> service.isMagicSquare(matrix))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("matrix must not be empty");
+        }
+
+        @Test
+        @DisplayName("throws when matrix size is greater than 100")
+        void throwsWhenMatrixSizeIsTooBig() {
+            Integer[][] matrix = new Integer[101][101];
+            for (int r = 0; r < 101; r++) {
+                for (int c = 0; c < 101; c++) {
+                    matrix[r][c] = 1;
+                }
+            }
+            assertThatThrownBy(() -> service.isMagicSquare(matrix))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("matrix size must be no greater than 100 (got 101)");
+        }
+
+        @Test
+        @DisplayName("throws when matrix isn't square")
+        void throwsWhenMatrixIsNotSquare() {
+            Integer[][] matrix = {
+                    {1, 2, 3},
+                    {4, 5, 6}
+            };
+            assertThatThrownBy(() -> service.isMagicSquare(matrix))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("matrix must have the same number of rows as columns");
+        }
+
+        @Test
+        @DisplayName("throws when matrix is jagged")
+        void throwsWhenMatrixIsJagged() {
+            Integer[][] matrix = {
+                    {1, 2, 3},
+                    {4, 5},
+                    {6, 7, 8}
+            };
+            assertThatThrownBy(() -> service.isMagicSquare(matrix))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("matrix must have 3 columns");
+        }
+    }
+
+    @Nested
+    @DisplayName("magic square - cells values validation")
+    class CellsValuesValidationMagicSquare {
+
+        @Test
+        @DisplayName("throws when cell value is null")
+        void throwsWhenCellValueIsNull() {
+            Integer[][] matrix = {
+                    {1, null, 3},
+                    {4, 5, 6},
+                    {7, 8, 9}
+            };
+            assertThatThrownBy(() -> service.isMagicSquare(matrix))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("matrix must not contain null values in row : 0, col : 1");
+        }
+
+        @ParameterizedTest
+        @MethodSource("invalidCellValuesCases")
+        @DisplayName("throws when cell value is zero or negative")
+        void throwsWhenCellValueIsZeroOrNegative(Integer[][] matrix) {
+
+            assertThatThrownBy(() -> service.isMagicSquare(matrix))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("matrix must contain values greater than zero in row : 0, col : 1");
+        }
+
+        static Stream<Arguments> invalidCellValuesCases() {
+            return Stream.of(
+                    Arguments.of((Object) new Integer[][] {
+                            {1, 0, 3},
+                            {4, 5, 6},
+                            {7, 8, 9}
+                    }),
+                    Arguments.of((Object) new Integer[][] {
+                            {1, -5, 3},
+                            {4, 5, 6},
+                            {7, 8, 9}
+                    })
+            );
+        }
+
+    }
 }
