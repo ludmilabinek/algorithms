@@ -35,6 +35,24 @@ Ten algorithms, each with its own endpoint and a small browser UI:
 
 Then open <http://localhost:8080> — the landing page lists all ten algorithms with a *Run* button for each.
 
+## Running with Docker
+
+The repository includes a multi-stage `Dockerfile` so the application can be built and run without a local JDK.
+
+```bash
+docker build -t algorithms .
+docker run --rm -p 8080:8080 algorithms
+```
+
+Then open <http://localhost:8080> as above.
+
+The Dockerfile uses two stages:
+
+1. **Build** — `eclipse-temurin:21-jdk-alpine` runs `./gradlew bootJar` to produce the executable jar. Build files are copied before sources so dependency resolution is cached as a separate layer.
+2. **Runtime** — `eclipse-temurin:21-jre-alpine` (no JDK, no Gradle) runs the jar via `java -jar`. The final image is ~190 MB.
+
+`.dockerignore` excludes build artefacts, IDE files, and git metadata so the build context stays small.
+
 ## API reference
 
 ### Merge two sorted integer lists

@@ -1,0 +1,24 @@
+# Build artefacts
+build
+out
+.gradle
+
+# IDE files
+.idea
+.vscode
+*.iml
+
+# Local dev tooling
+.claude
+
+# Git
+.git
+.gitignore
+
+# Docs and meta — not needed by the build
+docs
+README.md
+LICENSE
+
+# Logs
+*.log
