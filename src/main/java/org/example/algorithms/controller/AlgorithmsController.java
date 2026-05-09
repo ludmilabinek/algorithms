@@ -4,6 +4,9 @@ import org.example.algorithms.dto.AddListsRequest;
 import org.example.algorithms.dto.AddListsResponse;
 import org.example.algorithms.dto.FactorialRequest;
 import org.example.algorithms.dto.FactorialResponse;
+import org.example.algorithms.dto.FlightDirection;
+import org.example.algorithms.dto.FlightDirectionRequest;
+import org.example.algorithms.dto.FlightDirectionResponse;
 import org.example.algorithms.dto.MagicSquareRequest;
 import org.example.algorithms.dto.MagicSquareResponse;
 import org.example.algorithms.dto.MaxProfitRequest;
@@ -88,5 +91,11 @@ public class AlgorithmsController {
     public MagicSquareResponse magicSquare(@RequestBody MagicSquareRequest request) {
         boolean result = algorithmsService.isMagicSquare(request.matrix());
         return new MagicSquareResponse(result);
+    }
+
+    @PostMapping("/flights/direction")
+    public FlightDirectionResponse flightDirection(@RequestBody FlightDirectionRequest request) {
+        FlightDirection result = algorithmsService.flightDirection(request.headings());
+        return new FlightDirectionResponse(result);
     }
 }

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Algorithms — Flight Direction Analysis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .result-value { font-size: 2rem; font-weight: 600; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="container py-5" style="max-width: 780px;" x-data="flightDirectionApp()">
+
+    <nav class="mb-3">
+        <a href="/" class="text-decoration-none">&larr; Back to algorithms</a>
+    </nav>
+
+    <header class="mb-4">
+        <h1 class="mb-1">Flight Direction Analysis</h1>
+        <p class="text-muted mb-0">
+            <code>POST /api/algorithms/flights/direction</code> — given a sequence of compass
+            headings recorded at regular intervals, decides whether the plane ended up to the
+            <strong>right</strong>, to the <strong>left</strong>, or directly along its initial course.
+        </p>
+    </header>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+
+            <div class="mb-3">
+                <label for="headings" class="form-label fw-semibold">Headings</label>
+                <input id="headings" type="text" class="form-control font-monospace"
+                       x-model="headingsInput"
+                       placeholder="e.g. 0, 30, 60">
+                <div class="form-text">
+                    Comma- or space-separated integers in <code>[0, 360)</code>, taken at regular
+                    intervals (equal-length segments assumed). Aviation convention:
+                    <code>0°</code> = North, increasing clockwise. Minimum 2 readings, max 10 000.
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-primary"
+                        x-on:click="analyze()"
+                        x-bind:disabled="loading">
+                    <span x-show="!loading">Analyze</span>
+                    <span x-show="loading" x-cloak style="display: none;">
+                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                        Analyzing…
+                    </span>
+                </button>
+                <button class="btn btn-outline-secondary" x-on:click="loadExample('right')" type="button">
+                    Right turn
+                </button>
+                <button class="btn btn-outline-secondary" x-on:click="loadExample('left')" type="button">
+                    Left turn
+                </button>
+                <button class="btn btn-outline-secondary" x-on:click="loadExample('straight')" type="button">
+                    Straight
+                </button>
+                <button class="btn btn-outline-secondary" x-on:click="loadExample('uturn')" type="button">
+                    U-turn
+                </button>
+                <button class="btn btn-outline-secondary" x-on:click="clearAll()" type="button">
+                    Clear
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <template x-if="error">
+        <div class="alert alert-danger" role="alert">
+            <strong>Error:</strong> <span x-text="error"></span>
+        </div>
+    </template>
+
+    <!-- Result: STRAIGHT -->
+    <template x-if="result === 'STRAIGHT'">
+        <div class="card shadow-sm border-success">
+            <div class="card-header bg-success-subtle">
+                <span class="fw-semibold">Straight</span>
+            </div>
+            <div class="card-body">
+                <div class="result-value text-success">&#8593; STRAIGHT</div>
+                <div class="text-muted">The plane ended up on the line of its initial course (within tolerance) — neither right nor left.</div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Result: RIGHT -->
+    <template x-if="result === 'RIGHT'">
+        <div class="card shadow-sm border-primary">
+            <div class="card-header bg-primary-subtle">
+                <span class="fw-semibold">Right</span>
+            </div>
+            <div class="card-body">
+                <div class="result-value text-primary">&#8599; RIGHT</div>
+                <div class="text-muted">The plane ended up to the right of the line it was flying on at the start.</div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Result: LEFT -->
+    <template x-if="result === 'LEFT'">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning-subtle">
+                <span class="fw-semibold">Left</span>
+            </div>
+            <div class="card-body">
+                <div class="result-value text-warning-emphasis">&#8598; LEFT</div>
+                <div class="text-muted">The plane ended up to the left of the line it was flying on at the start.</div>
+            </div>
+        </div>
+    </template>
+
+</div>
+
+<script>
+    function flightDirectionApp() {
+        return {
+            headingsInput: '',
+            result: null,
+            error: null,
+            loading: false,
+
+            examples: {
+                right: '0, 30, 60',
+                left: '0, 330, 300',
+                straight: '90, 90, 90',
+                uturn: '0, 180'
+            },
+
+            loadExample(name) {
+                this.headingsInput = this.examples[name];
+                this.result = null;
+                this.error = null;
+            },
+
+            clearAll() {
+                this.headingsInput = '';
+                this.result = null;
+                this.error = null;
+            },
+
+            // Parses comma- or whitespace-separated integers into a number[].
+            // Rejects empty tokens and non-integers; range checking is left to the server.
+            parseHeadings(input) {
+                const trimmed = input.trim();
+                if (trimmed === '') {
+                    throw new Error('headings: value is empty');
+                }
+                const tokens = trimmed.split(/[\s,]+/);
+                const result = [];
+                for (let i = 0; i < tokens.length; i++) {
+                    const token = tokens[i];
+                    const n = Number(token);
+                    if (token === '' || !Number.isInteger(n)) {
+                        throw new Error(
+                            `headings: "${token}" is not a valid integer (position ${i + 1})`
+                        );
+                    }
+                    result.push(n);
+                }
+                return result;
+            },
+
+            async analyze() {
+                this.error = null;
+                this.result = null;
+
+                let headings;
+                try {
+                    headings = this.parseHeadings(this.headingsInput);
+                } catch (e) {
+                    this.error = e.message;
+                    return;
+                }
+
+                this.loading = true;
+                try {
+                    const response = await fetch('/api/algorithms/flights/direction', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ headings })
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok) {
+                        this.error = data.error || `Request failed with HTTP ${response.status}`;
+                    } else {
+                        this.result = data.result;
+                    }
+                } catch (e) {
+                    this.error = `Network error: ${e.message}`;
+                } finally {
+                    this.loading = false;
+                }
+            }
+        };
+    }
+</script>
+</body>
+</html>

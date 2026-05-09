@@ -1,5 +1,6 @@
 package org.example.algorithms.service;
 
+import org.example.algorithms.dto.FlightDirection;
 import org.example.algorithms.exception.ValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -1028,5 +1029,133 @@ class AlgorithmsServiceTest {
             );
         }
 
+    }
+
+    @Nested
+    @DisplayName("flightDirection - happy path")
+    class HappyPathFlightDirection {
+
+        @ParameterizedTest
+        @MethodSource("flightDirectionCases")
+        @DisplayName("recognizes overall flight direction")
+        void recognizesFlightDirection(Integer[] headings, FlightDirection expected) {
+            assertThat(service.flightDirection(headings)).isEqualTo(expected);
+        }
+
+        static Stream<Arguments> flightDirectionCases() {
+            return Stream.of(
+                    // STRAIGHT — no change in course
+                    Arguments.of((Object) new Integer[]{0, 0}, FlightDirection.STRAIGHT),
+                    Arguments.of((Object) new Integer[]{90, 90, 90}, FlightDirection.STRAIGHT),
+                    // STRAIGHT — upper boundary 359 (just under 360)
+                    Arguments.of((Object) new Integer[]{359, 359}, FlightDirection.STRAIGHT),
+                    // STRAIGHT — U-turn ends back on the original course line
+                    Arguments.of((Object) new Integer[]{0, 180}, FlightDirection.STRAIGHT),
+                    // STRAIGHT — full loop returns to start
+                    Arguments.of((Object) new Integer[]{0, 90, 180, 270}, FlightDirection.STRAIGHT),
+
+                    // RIGHT — gradual right turn
+                    Arguments.of((Object) new Integer[]{0, 30, 60}, FlightDirection.RIGHT),
+                    // RIGHT — single 90° step right (zigzag ends right of course line)
+                    Arguments.of((Object) new Integer[]{0, 90, 0}, FlightDirection.RIGHT),
+                    // RIGHT — wraparound at 0°/360° (359° → 1° is a 2° right turn)
+                    Arguments.of((Object) new Integer[]{359, 1}, FlightDirection.RIGHT),
+
+                    // LEFT — gradual left turn
+                    Arguments.of((Object) new Integer[]{0, 330, 300}, FlightDirection.LEFT),
+                    // LEFT — single 90° step left
+                    Arguments.of((Object) new Integer[]{0, 270, 0}, FlightDirection.LEFT),
+                    // LEFT — wraparound at 0°/360° (1° → 359° is a 2° left turn)
+                    Arguments.of((Object) new Integer[]{1, 359}, FlightDirection.LEFT)
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("flightDirection - null validation")
+    class NullValidationFlightDirection {
+
+        @Test
+        @DisplayName("throws when headings is null")
+        void throwsWhenHeadingsIsNull() {
+            Integer[] headings = null;
+            assertThatThrownBy(() -> service.flightDirection(headings))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("headings must not be null");
+        }
+
+        @Test
+        @DisplayName("throws when headings contains a null element")
+        void throwsWhenHeadingsContainsNullElement() {
+            Integer[] headings = {0, null, 90};
+            assertThatThrownBy(() -> service.flightDirection(headings))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("headings must not contain null elements");
+        }
+    }
+
+    @Nested
+    @DisplayName("flightDirection - size validation")
+    class SizeValidationFlightDirection {
+
+        @Test
+        @DisplayName("throws when headings is empty")
+        void throwsWhenHeadingsIsEmpty() {
+            Integer[] headings = new Integer[0];
+            assertThatThrownBy(() -> service.flightDirection(headings))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("headings must have at least 2 elements");
+        }
+
+        @Test
+        @DisplayName("throws when headings has only one element")
+        void throwsWhenHeadingsHasOnlyOneElement() {
+            Integer[] headings = {90};
+            assertThatThrownBy(() -> service.flightDirection(headings))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("headings must have at least 2 elements");
+        }
+
+        @Test
+        @DisplayName("throws when headings exceeds maximum size of 10000")
+        void throwsWhenHeadingsExceedsMaxSize() {
+            Integer[] headings = new Integer[10001];
+            for (int i = 0; i < headings.length; i++) {
+                headings[i] = 0;
+            }
+            assertThatThrownBy(() -> service.flightDirection(headings))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage("headings must have at most 10000 elements");
+        }
+    }
+
+    @Nested
+    @DisplayName("flightDirection - range validation")
+    class RangeValidationFlightDirection {
+
+        @ParameterizedTest
+        @MethodSource("outOfRangeHeadingsCases")
+        @DisplayName("throws when a heading is outside [0, 360]")
+        void throwsWhenHeadingIsOutOfRange(Integer[] headings, String expectedMessage) {
+            assertThatThrownBy(() -> service.flightDirection(headings))
+                    .isInstanceOf(ValidationException.class)
+                    .hasMessage(expectedMessage);
+        }
+
+        static Stream<Arguments> outOfRangeHeadingsCases() {
+            return Stream.of(
+                    Arguments.of((Object) new Integer[]{-1, 90},
+                            "headings contains value out of range [0, 360) at index 0 (got -1)"),
+                    Arguments.of((Object) new Integer[]{0, -90},
+                            "headings contains value out of range [0, 360) at index 1 (got -90)"),
+                    // 360 is now rejected — range is half-open [0, 360)
+                    Arguments.of((Object) new Integer[]{360, 0},
+                            "headings contains value out of range [0, 360) at index 0 (got 360)"),
+                    Arguments.of((Object) new Integer[]{0, 361},
+                            "headings contains value out of range [0, 360) at index 1 (got 361)"),
+                    Arguments.of((Object) new Integer[]{720, 0},
+                            "headings contains value out of range [0, 360) at index 0 (got 720)")
+            );
+        }
     }
 }

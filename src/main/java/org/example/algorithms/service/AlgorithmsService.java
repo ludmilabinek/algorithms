@@ -1,5 +1,6 @@
 package org.example.algorithms.service;
 
+import org.example.algorithms.dto.FlightDirection;
 import org.example.algorithms.exception.ValidationException;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +30,8 @@ public class AlgorithmsService {
     private static final int MAX_FACTORIAL_N = 5000;
 
     private static final int MAX_MAGIC_SQUARE_N = 100;
+
+    private static final int MAX_HEADINGS = 10000;
 
     public List<Integer> addSortedLists(List<Integer> list1, List<Integer> list2) {
         validateAddList("list1", list1);
@@ -284,6 +287,78 @@ public class AlgorithmsService {
         return true;
     }
 
+    /**
+     * Determines whether a plane's overall flight ended up to the right of, to the
+     * left of, or directly along its initial course, based on a sequence of
+     * heading readings taken at regular intervals.
+     * <p>
+     * <b>Assumptions / contract:</b>
+     * <ul>
+     *   <li><b>Equal-length segments.</b> Each consecutive pair of readings is
+     *       treated as one segment of equal length, so each heading contributes
+     *       a unit displacement vector. Without this assumption no scalar
+     *       "summary" can be computed from headings alone.</li>
+     *   <li><b>Aviation heading convention.</b> {@code 0°} = North,
+     *       {@code 90°} = East, {@code 180°} = South, {@code 270°} = West;
+     *       headings increase <i>clockwise</i>. "Right" of a heading
+     *       {@code h} therefore means heading {@code h + 90°}.</li>
+     *   <li><b>Reference direction = first heading.</b> "Right/left/straight"
+     *       is judged relative to {@code headings[0]} — i.e. did the plane
+     *       end up to the right or to the left of the line it was flying on
+     *       at the very beginning?</li>
+     *   <li><b>Heading range:</b> {@code [0°, 360°)} (half-open, strict).
+     *       {@code 360} is rejected as out-of-range — it would be the same
+     *       as {@code 0} but is not the canonical representation.</li>
+     *   <li><b>Minimum 2 readings.</b> A single reading describes no
+     *       maneuver — the question "did it turn?" only makes sense with at
+     *       least one transition between two headings.</li>
+     *   <li><b>Wraparound at 0°/360°</b> is handled implicitly by
+     *       {@code sin}/{@code cos}: {@code sin(359°)} and {@code sin(-1°)}
+     *       produce the same value, so {@code [359, 1]} is correctly
+     *       classified as {@link FlightDirection#RIGHT} (a 2° right turn).</li>
+     *   <li><b>Tolerance for STRAIGHT.</b> Because of {@code double}
+     *       round-off, the perpendicular component is treated as zero when
+     *       its absolute value is below {@code 1e-9}. This means cases like
+     *       a U-turn ({@code [0, 180]}) or a closed loop
+     *       ({@code [0, 90, 180, 270]}), which mathematically end on the
+     *       initial-course line, are classified as
+     *       {@link FlightDirection#STRAIGHT}.</li>
+     * </ul>
+     * <p>
+     * <b>Algorithm.</b> Each heading is converted into a 2-D unit vector and
+     * the vectors are summed to give the plane's final displacement relative
+     * to its starting point. That displacement is then projected onto the
+     * direction perpendicular-and-to-the-right of the initial heading
+     * (a single dot product). The sign of the projection determines the
+     * verdict; near-zero (within tolerance) means the plane ended up on the
+     * initial-course line.
+     *
+     * @param headings non-null array of at least 2 readings, each in
+     *                 {@code [0, 360)}; no {@code null} elements;
+     *                 max {@value #MAX_HEADINGS} elements
+     * @return {@link FlightDirection#RIGHT} if the plane ended up to the
+     *         right of its initial course, {@link FlightDirection#LEFT} if
+     *         to the left, {@link FlightDirection#STRAIGHT} if on the
+     *         initial-course line (within tolerance)
+     */
+    public FlightDirection flightDirection(Integer[] headings) {
+        validateFlightDirection("headings", headings);
+        double totalX = 0;
+        double totalY = 0;
+        for(int heading : headings) {
+            totalX += Math.sin(Math.toRadians(heading));
+            totalY += Math.cos(Math.toRadians(heading));
+        }
+
+        double h0 = Math.toRadians(headings[0]);
+        double rightComponent = totalX * Math.cos(h0) - totalY * Math.sin(h0);
+
+        double tolerance = 1e-9;
+        if (rightComponent > tolerance)  return FlightDirection.RIGHT;
+        if (rightComponent < -tolerance) return FlightDirection.LEFT;
+        return FlightDirection.STRAIGHT;
+    }
+
     // VALIDATION
     private void validateAddList(String name, List<Integer> list) {
         validateNotNull(name, list);
@@ -430,6 +505,27 @@ public class AlgorithmsService {
                 }
             }
         }
+    }
 
+    private void validateFlightDirection(String name, Integer[] headings) {
+        validateNotNull(name, headings);
+
+        if (headings.length < 2) {
+            throw new ValidationException(name + " must have at least 2 elements");
+        }
+
+        if (headings.length > MAX_HEADINGS) {
+            throw new ValidationException(name + " must have at most " + MAX_HEADINGS + " elements");
+        }
+
+        for (int i = 0; i < headings.length; i++) {
+            Integer curr = headings[i];
+            if (curr == null) {
+                throw new ValidationException(name + " must not contain null elements");
+            }
+            if (curr < 0 || curr > 359) {
+                throw new ValidationException(name + " contains value out of range [0, 360) at index " + i + " (got " + curr + ")");
+            }
+        }
     }
 }

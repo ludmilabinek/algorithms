@@ -1,10 +1,10 @@
 # Algorithms REST API
 
-A Spring Boot / Java 21 REST service exposing nine classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
+A Spring Boot / Java 21 REST service exposing ten classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
 
 ## Features
 
-Nine algorithms, each with its own endpoint and a small browser UI:
+Ten algorithms, each with its own endpoint and a small browser UI:
 
 | Algorithm                       | Endpoint                                             | Time          | Space    |
 | ------------------------------- | ---------------------------------------------------- | ------------- | -------- |
@@ -17,6 +17,7 @@ Nine algorithms, each with its own endpoint and a small browser UI:
 | Phone validation                | `POST /api/algorithms/phones/validate`               | O(n)          | O(n)     |
 | Factorial (big numbers)         | `POST /api/algorithms/numbers/factorial`             | O(n · d)      | O(d)     |
 | Magic square check              | `POST /api/algorithms/numbers/magic-square`          | O(n²)         | O(n²)    |
+| Flight direction analysis       | `POST /api/algorithms/flights/direction`             | O(n)          | O(1)     |
 
 ## Tech stack
 
@@ -32,7 +33,7 @@ Nine algorithms, each with its own endpoint and a small browser UI:
 ./gradlew bootRun
 ```
 
-Then open <http://localhost:8080> — the landing page lists all nine algorithms with a *Run* button for each.
+Then open <http://localhost:8080> — the landing page lists all ten algorithms with a *Run* button for each.
 
 ## API reference
 
@@ -246,6 +247,45 @@ curl -X POST http://localhost:8080/api/algorithms/numbers/magic-square \
 
 **Implementation:** single pass over the matrix in `O(n²)` time and `O(n²)` extra space (a `boolean[]` to detect duplicates). On the way through, each row sum is compared against the first row's sum; both diagonals are accumulated by checking `row == col` (main diagonal) and `row == n - col - 1` (anti-diagonal). Numerically safe in `int` for `n ≤ 100` — max sum is `n × n² = 1 000 000`, well below `Integer.MAX_VALUE`.
 
+### Flight direction analysis
+
+Given a sequence of compass headings recorded at regular intervals during a flight, decides whether the plane ended up — overall — to the **right** of, to the **left** of, or directly along its **initial** course. Returns one of `STRAIGHT`, `RIGHT`, `LEFT`.
+
+```bash
+curl -X POST http://localhost:8080/api/algorithms/flights/direction \
+  -H "Content-Type: application/json" \
+  -d '{"headings":[0,30,60]}'
+```
+
+```json
+{ "result": "RIGHT" }
+```
+
+**Examples:**
+- `[0, 0, 0]` → `STRAIGHT` (no change in course)
+- `[0, 30, 60]` → `RIGHT` (gradual right turn)
+- `[0, 330, 300]` → `LEFT` (gradual left turn)
+- `[0, 90, 0]` → `RIGHT` (right "step" — plane ends to the right of initial line)
+- `[0, 180]` → `STRAIGHT` (U-turn — plane returns onto the initial-course line)
+- `[0, 90, 180, 270]` → `STRAIGHT` (full square loop — back to starting point)
+- `[359, 1]` → `RIGHT` (small right turn across the 0°/360° wraparound)
+
+**Assumptions** (deliberately documented because the original problem is under-specified):
+
+1. **Equal-length segments.** Each consecutive pair of readings is treated as one segment of equal length, so each heading contributes a unit displacement vector. Without this assumption no scalar "summary" could be computed from headings alone.
+2. **Aviation heading convention.** `0°` = North, `90°` = East, `180°` = South, `270°` = West; headings increase **clockwise**. "Right" of a heading `h` means heading `h + 90°`.
+3. **Reference = first heading.** The verdict is judged relative to `headings[0]` — i.e. did the plane end up to the right or to the left of the line it was flying on at the very beginning. Other interpretations exist (e.g. relative to North, or net sum of signed turn angles) and would give different answers for some inputs.
+4. **Heading range:** `[0°, 360°)` (half-open). `360` is rejected as out-of-range — it would be the same as `0` but is not the canonical representation.
+5. **Minimum 2 readings.** A single reading describes no maneuver, so the question "did it turn?" only makes sense from one transition onward.
+6. **Wraparound at 0°/360°** is handled implicitly by `sin`/`cos` — `sin(359°)` and `sin(-1°)` produce the same value, so no manual modulo normalization is needed.
+7. **Tolerance for STRAIGHT** is `1e-9`. Cases that mathematically end on the initial-course line (U-turn, full loop) round to zero perpendicular component within this tolerance and are classified as `STRAIGHT`.
+
+**Validation:** `headings` non-null, `2 ≤ length ≤ 10 000`, no `null` elements, every value in `[0, 360)`.
+
+**Implementation:** sum unit vectors `(sin(h_i), cos(h_i))` over all headings to get the final displacement, then dot-product it with the right-perpendicular of the initial heading `(cos(h_0), -sin(h_0))`. Sign of the result decides `RIGHT`/`LEFT`; near-zero (within tolerance) is `STRAIGHT`. Single pass, `O(n)` time, `O(1)` extra space (just two running sums in `double`).
+
+**What this does *not* do:** it does not compute the plane's actual physical position relative to a "should-have-flown" line if segments were of unequal length or duration — that would require additional time/distance data. The classification is purely about heading-vector summation under the equal-length assumption.
+
 ## Error responses
 
 Every validation failure returns HTTP 400 with a targeted, actionable message:
@@ -299,7 +339,8 @@ src/main/resources/
     ├── noZeroPair.html
     ├── phoneValidate.html
     ├── factorial.html
-    └── magicSquare.html
+    ├── magicSquare.html
+    └── flightDirection.html
 
 src/test/java/...                      JUnit 5 + AssertJ tests
 docs/specs/                            design documents
