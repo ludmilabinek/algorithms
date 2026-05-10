@@ -1,6 +1,6 @@
 # Algorithms REST API
 
-A Spring Boot / Java 21 REST service exposing ten classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, unit testing, and a clean separation between the API, service, and UI layers.
+A Spring Boot / Java 21 REST service exposing ten classic algorithms, built as a portfolio piece to demonstrate REST design, input validation, layered testing (unit + slice), and a clean separation between the API, service, and UI layers.
 
 ## Features
 
@@ -328,12 +328,26 @@ Jackson is configured to reject floats where integers are expected (`spring.jack
 ./gradlew test
 ```
 
-Unit tests cover:
+The test suite has **two layers**, each pulling its own weight:
+
+### Unit tests (`src/test/.../service/AlgorithmsServiceTest`)
+
+Test the algorithms and their validation in isolation, without Spring. Cover:
 
 - **Happy paths** for each algorithm (including boundary values and parameterized cases)
 - **Every validation rule**, asserting the exact error message for each failure
 - **Input-immutability contracts** where meaningful (lists and arrays — not Strings, which are immutable by language)
-- **Boundary values** (e.g., exactly 50-element lists, values at `±100`, 1000-character text)
+- **Boundary values** (e.g., exactly 50-element lists, values at `±100`, 1000-character text, `5000!`, `Integer.MAX_VALUE`)
+
+### Slice tests (`src/test/.../controller/AlgorithmsControllerTest`)
+
+Use `@WebMvcTest` + `MockMvc` to test the HTTP wiring around the controller — the parts unit tests cannot cover because they live in the framework. The service is mocked with `@MockitoBean`, so these tests stay focused on the plumbing rather than the business logic. Cover:
+
+- **Happy path:** request → DTO deserialization → controller → DTO serialization → HTTP 200 + JSON body
+- **Validation error mapping:** `ValidationException` from the service → HTTP 400 with `{"error": "..."}` (verifies the global `@RestControllerAdvice` is active)
+- **Jackson strict mode:** fractional value (`3.14`) for an `Integer` field → HTTP 400 (verifies `accept-float-as-int=false` is wired up)
+
+Only one endpoint (`/numbers/factorial`) is covered in slice tests because the wiring is identical for every endpoint — testing each one would re-test the framework, not new code.
 
 ## Project structure
 
@@ -360,7 +374,9 @@ src/main/resources/
     ├── magicSquare.html
     └── flightDirection.html
 
-src/test/java/...                      JUnit 5 + AssertJ tests
+src/test/java/...                      JUnit 5 + AssertJ
+├── service/AlgorithmsServiceTest     unit tests — algorithms and validation
+└── controller/AlgorithmsControllerTest slice tests — @WebMvcTest + MockMvc for HTTP wiring
 docs/specs/                            design documents
 ```
 
